@@ -1,0 +1,1627 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>カタカナクイズ</title>
+  <style>
+    :root {
+      --primary: #6c63ff;
+      --primary-dark: #5a52d5;
+      --accent: #ff6584;
+      --gold: #ffd700;
+      --green: #2ecc71;
+      --bg: #f0f4ff;
+      --card: #ffffff;
+      --text: #2d2d44;
+      --gray: #a0a0b8;
+      --shadow: 0 4px 20px rgba(108,99,255,0.15);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', 'Noto Sans JP', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 16px;
+    }
+
+    /* ===== SCREENS ===== */
+    .screen { display: none; width: 100%; max-width: 640px; }
+    .screen.active { display: flex; flex-direction: column; }
+
+    /* ===== HEADER ===== */
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .header h1 {
+      font-size: 2rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .header .subtitle {
+      font-size: 0.85rem;
+      color: var(--gray);
+      margin-top: 4px;
+    }
+
+    /* ===== CARD ===== */
+    .card {
+      background: var(--card);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+    }
+
+    /* ===== HOME SCREEN ===== */
+    .status-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .stat-box {
+      flex: 1;
+      background: var(--bg);
+      border-radius: 14px;
+      padding: 14px 10px;
+      text-align: center;
+    }
+    .stat-box .stat-label {
+      font-size: 0.7rem;
+      color: var(--gray);
+      margin-bottom: 4px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .stat-box .stat-value {
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: var(--primary);
+    }
+    .stat-box .stat-sub {
+      font-size: 0.7rem;
+      color: var(--gray);
+      margin-top: 2px;
+    }
+
+    /* Level badge */
+    .level-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, var(--primary), #9b59b6);
+      color: #fff;
+      border-radius: 30px;
+      padding: 6px 16px;
+      font-weight: 800;
+      font-size: 0.9rem;
+      margin-bottom: 10px;
+    }
+
+    /* Rank badge */
+    .rank-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, var(--gold), #ff9800);
+      color: #fff;
+      border-radius: 30px;
+      padding: 6px 16px;
+      font-weight: 800;
+      font-size: 0.9rem;
+      margin-bottom: 10px;
+    }
+
+    /* Progress bar */
+    .progress-wrap {
+      background: var(--bg);
+      border-radius: 20px;
+      height: 12px;
+      overflow: hidden;
+      margin: 8px 0;
+    }
+    .progress-bar {
+      height: 100%;
+      border-radius: 20px;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      transition: width 0.6s cubic-bezier(.34,1.56,.64,1);
+    }
+
+    /* Daily mission card */
+    .daily-card {
+      background: linear-gradient(135deg, #fff9e6, #fff3cc);
+      border: 2px solid #ffd700;
+    }
+    .daily-title {
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: #b8860b;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .daily-dots {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+    .daily-dot {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 2px solid #ffd700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #b8860b;
+      background: #fff;
+      transition: all 0.3s;
+    }
+    .daily-dot.done {
+      background: var(--gold);
+      color: #fff;
+      border-color: var(--gold);
+      transform: scale(1.1);
+    }
+    .daily-complete-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--green);
+      color: #fff;
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 0.85rem;
+      font-weight: 800;
+      margin-top: 8px;
+      animation: bounceIn 0.5s cubic-bezier(.34,1.56,.64,1) forwards;
+    }
+    .streak-text {
+      font-size: 0.85rem;
+      color: #b8860b;
+      font-weight: 700;
+      margin-top: 6px;
+    }
+
+    /* Buttons */
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 14px;
+      font-size: 1.1rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.1s;
+      text-align: center;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), #9b59b6);
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(108,99,255,0.4);
+    }
+    .btn-daily {
+      background: linear-gradient(135deg, #ffd700, #ff9800);
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(255,215,0,0.4);
+    }
+    .btn-secondary {
+      background: var(--bg);
+      color: var(--primary);
+      border: 2px solid var(--primary);
+    }
+    .btn-sm {
+      padding: 10px 16px;
+      font-size: 0.9rem;
+      border-radius: 10px;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .btn-row .btn { flex: 1; }
+
+    /* ===== LEVEL SELECT ===== */
+    .level-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .level-item {
+      background: var(--bg);
+      border-radius: 14px;
+      padding: 14px;
+      text-align: center;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .level-item:hover:not(.locked) { border-color: var(--primary); background: #eef0ff; }
+    .level-item.locked { opacity: 0.5; cursor: not-allowed; }
+    .level-item .lv-num {
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: var(--primary);
+    }
+    .level-item .lv-name {
+      font-size: 0.8rem;
+      color: var(--text);
+      font-weight: 700;
+      margin-top: 4px;
+    }
+    .level-item .lv-desc {
+      font-size: 0.7rem;
+      color: var(--gray);
+      margin-top: 2px;
+    }
+    .level-item .lv-progress {
+      font-size: 0.7rem;
+      color: var(--primary);
+      margin-top: 6px;
+      font-weight: 700;
+    }
+    .level-item .lv-mini-bar {
+      margin-top: 8px;
+    }
+    .level-item .lock-icon {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      font-size: 1rem;
+    }
+    .level-item.cleared .lv-num { color: var(--green); }
+    .level-item.cleared { border-color: var(--green); background: #e8faf2; }
+    .level-item.current-lv { border-color: var(--primary); background: #eef0ff; }
+
+    /* ===== QUIZ SCREEN ===== */
+    .quiz-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .quiz-mode-badge {
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 4px 12px;
+      border-radius: 20px;
+      background: var(--primary);
+      color: #fff;
+    }
+    .quiz-mode-badge.daily { background: linear-gradient(135deg, #ffd700, #ff9800); }
+    .quiz-info {
+      text-align: right;
+      font-size: 0.8rem;
+      color: var(--gray);
+      font-weight: 700;
+    }
+
+    .question-card {
+      background: linear-gradient(135deg, var(--primary), #9b59b6);
+      border-radius: 24px;
+      padding: 30px 20px;
+      text-align: center;
+      margin-bottom: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .question-card::before {
+      content: '';
+      position: absolute;
+      top: -30px; right: -30px;
+      width: 120px; height: 120px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+    }
+    .question-label {
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.75);
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .question-char {
+      font-size: 5rem;
+      font-weight: 900;
+      color: #fff;
+      line-height: 1.1;
+      letter-spacing: 0.05em;
+    }
+    .question-hint {
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.75);
+      margin-top: 8px;
+    }
+
+    /* Timer bar */
+    .timer-bar-wrap {
+      background: rgba(255,255,255,0.25);
+      border-radius: 10px;
+      height: 6px;
+      margin-top: 12px;
+      overflow: hidden;
+    }
+    .timer-bar {
+      height: 100%;
+      border-radius: 10px;
+      background: #fff;
+      transition: width 0.1s linear;
+    }
+
+    /* Choices */
+    .choices {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .choice-btn {
+      background: var(--card);
+      border: 2.5px solid #e0e0f0;
+      border-radius: 14px;
+      padding: 18px 10px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: var(--text);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .choice-btn:hover { border-color: var(--primary); color: var(--primary); background: #f0f0ff; }
+    .choice-btn.correct { background: #e8faf2; border-color: var(--green); color: var(--green); transform: scale(1.04); }
+    .choice-btn.wrong { background: #fef0f0; border-color: var(--accent); color: var(--accent); }
+    .choice-btn:disabled { cursor: not-allowed; }
+
+    /* Points popup */
+    .points-popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      background: linear-gradient(135deg, var(--gold), #ff9800);
+      color: #fff;
+      border-radius: 20px;
+      padding: 20px 32px;
+      font-size: 2rem;
+      font-weight: 900;
+      z-index: 1000;
+      pointer-events: none;
+      transition: transform 0.3s cubic-bezier(.34,1.56,.64,1), opacity 0.3s;
+      opacity: 0;
+      text-align: center;
+      white-space: pre-line;
+    }
+    .points-popup.show {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+    }
+    .points-popup.hide {
+      transform: translate(-50%, -80%) scale(0.8);
+      opacity: 0;
+    }
+
+    /* ===== RESULT SCREEN ===== */
+    .result-big {
+      text-align: center;
+      padding: 20px 0;
+    }
+    .result-emoji { font-size: 4rem; }
+    .result-title {
+      font-size: 1.6rem;
+      font-weight: 900;
+      color: var(--primary);
+      margin: 8px 0;
+    }
+    .result-score {
+      font-size: 1.1rem;
+      color: var(--gray);
+      margin-bottom: 16px;
+    }
+    .result-points {
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--gold);
+    }
+    .result-points-label {
+      font-size: 0.8rem;
+      color: var(--gray);
+      margin-bottom: 8px;
+    }
+
+    /* ===== LEVEL UP ANIMATION ===== */
+    .levelup-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .levelup-overlay.show { opacity: 1; pointer-events: all; }
+    .levelup-box {
+      background: linear-gradient(135deg, #6c63ff, #9b59b6);
+      border-radius: 30px;
+      padding: 40px 50px;
+      text-align: center;
+      transform: scale(0.5);
+      transition: transform 0.5s cubic-bezier(.34,1.56,.64,1);
+      color: #fff;
+      max-width: 90vw;
+    }
+    .levelup-overlay.show .levelup-box { transform: scale(1); }
+    .levelup-stars { font-size: 2.5rem; letter-spacing: 0.2em; animation: starSpin 1s infinite linear; }
+    @keyframes starSpin { 0%{filter:hue-rotate(0deg)} 100%{filter:hue-rotate(360deg)} }
+    .levelup-label { font-size: 1rem; font-weight: 800; opacity: 0.85; margin: 8px 0 4px; }
+    .levelup-title { font-size: 3rem; font-weight: 900; }
+    .levelup-sub { font-size: 1rem; opacity: 0.85; margin-top: 8px; }
+    .levelup-new-chars {
+      margin-top: 12px;
+      font-size: 1.4rem;
+      letter-spacing: 0.15em;
+      background: rgba(255,255,255,0.15);
+      border-radius: 12px;
+      padding: 10px 16px;
+    }
+
+    /* Confetti */
+    .confetti-piece {
+      position: fixed;
+      width: 10px; height: 14px;
+      top: -20px;
+      border-radius: 2px;
+      z-index: 3000;
+      animation: confettiFall linear forwards;
+      pointer-events: none;
+    }
+    @keyframes confettiFall {
+      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+    }
+
+    /* ===== RANK BADGES ===== */
+    .rank-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: var(--bg);
+      border-radius: 14px;
+      padding: 14px 16px;
+    }
+    .rank-icon { font-size: 2rem; }
+    .rank-info .rank-name { font-size: 1rem; font-weight: 800; color: var(--text); }
+    .rank-info .rank-pts { font-size: 0.8rem; color: var(--gray); }
+    .rank-arrow { margin-left: auto; font-size: 1.2rem; color: var(--primary); font-weight: 900; }
+
+    /* History list */
+    .history-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--bg);
+      font-size: 0.9rem;
+    }
+    .history-item:last-child { border-bottom: none; }
+    .history-correct { color: var(--green); font-weight: 800; }
+    .history-wrong { color: var(--accent); font-weight: 800; }
+
+    /* ===== ANIMATIONS ===== */
+    @keyframes bounceIn {
+      0% { transform: scale(0.3); opacity: 0; }
+      50% { transform: scale(1.08); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .bounce-in { animation: bounceIn 0.5s cubic-bezier(.34,1.56,.64,1) forwards; }
+
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
+    .shake { animation: shake 0.35s ease; }
+
+    @keyframes pulseGold {
+      0%,100% { box-shadow: 0 0 0 0 rgba(255,215,0,0.5); }
+      50% { box-shadow: 0 0 0 12px rgba(255,215,0,0); }
+    }
+    .pulse-gold { animation: pulseGold 1.5s infinite; }
+
+    /* Section title */
+    .section-title {
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: var(--gray);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+
+    /* Back button */
+    .back-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.2rem;
+      color: var(--primary);
+      padding: 4px 8px;
+      border-radius: 8px;
+      font-weight: 700;
+    }
+    .back-btn:hover { background: var(--bg); }
+
+    /* XP bar inline */
+    .xp-inline {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.75rem;
+      color: var(--gray);
+      font-weight: 700;
+      margin-top: 6px;
+    }
+    .xp-inline .xp-bar-wrap {
+      flex: 1;
+      background: #e8e8f0;
+      border-radius: 10px;
+      height: 8px;
+      overflow: hidden;
+    }
+    .xp-inline .xp-bar {
+      height: 100%;
+      border-radius: 10px;
+      background: linear-gradient(90deg, #ffd700, #ff9800);
+      transition: width 0.6s cubic-bezier(.34,1.56,.64,1);
+    }
+
+    /* Responsive tweaks */
+    @media (max-width: 400px) {
+      .question-char { font-size: 4rem; }
+      .choices { gap: 8px; }
+      .choice-btn { padding: 14px 6px; font-size: 1rem; }
+    }
+    @media (min-width: 640px) {
+      body { padding: 24px; }
+      .question-char { font-size: 6rem; }
+    }
+
+    /* Tab bar */
+    .tab-bar {
+      display: flex;
+      gap: 8px;
+      background: var(--card);
+      border-radius: 14px;
+      padding: 6px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 10px 4px;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      background: transparent;
+      color: var(--gray);
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    /* Scroll container */
+    .scroll-content { overflow-y: auto; flex: 1; }
+
+    /* Stars display */
+    .stars-row {
+      display: flex;
+      gap: 4px;
+      justify-content: center;
+      margin: 8px 0;
+    }
+    .star-icon { font-size: 1.2rem; }
+
+    /* Rank title in quiz */
+    .quiz-rank-strip {
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--gray);
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    /* All-clear overlay */
+    .allclear-box {
+      background: linear-gradient(135deg, #ffd700, #ff9800);
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== HOME SCREEN ===== -->
+<div class="screen active" id="screen-home">
+  <div class="header">
+    <h1>カタカナクイズ</h1>
+    <div class="subtitle">カタカナをマスターしよう！</div>
+  </div>
+
+  <!-- Status Row -->
+  <div class="status-row">
+    <div class="stat-box">
+      <div class="stat-label">現在レベル</div>
+      <div class="stat-value" id="home-level">Lv1</div>
+      <div class="stat-sub" id="home-level-name">見習い</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">累計ポイント</div>
+      <div class="stat-value" id="home-points">0</div>
+      <div class="stat-sub">ポイント</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">連続日数</div>
+      <div class="stat-value" id="home-streak">0</div>
+      <div class="stat-sub">日連続</div>
+    </div>
+  </div>
+
+  <!-- Level Progress -->
+  <div class="card">
+    <div class="section-title">レベル進捗</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+      <span id="home-lv-badge" class="level-badge">Lv1</span>
+      <span id="home-lv-next" style="font-size:0.8rem;color:var(--gray);">次のレベルまであと10問</span>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-bar" id="home-lv-bar" style="width:0%"></div>
+    </div>
+    <!-- XP to rank -->
+    <div class="xp-inline" id="home-xp-inline">
+      <span id="home-xp-label">ランク</span>
+      <div class="xp-bar-wrap"><div class="xp-bar" id="home-xp-bar" style="width:0%"></div></div>
+      <span id="home-xp-val">0pt</span>
+    </div>
+    <div id="home-rank-card" class="rank-card" style="margin-top:12px;">
+      <div class="rank-icon" id="home-rank-icon">🔰</div>
+      <div class="rank-info">
+        <div class="rank-name" id="home-rank-name">見習い</div>
+        <div class="rank-pts" id="home-rank-pts">0 ポイント獲得</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Daily Mission -->
+  <div class="card daily-card" id="daily-card">
+    <div class="daily-title">🌟 今日のミッション（5問チャレンジ）</div>
+    <div class="daily-dots" id="daily-dots"></div>
+    <div id="daily-complete-wrap" style="display:none;">
+      <div class="daily-complete-badge">🎉 今日のミッション完了！</div>
+    </div>
+    <div class="streak-text" id="streak-text"></div>
+  </div>
+
+  <!-- Buttons -->
+  <div class="btn-row">
+    <button class="btn btn-daily" id="btn-daily" onclick="startDailyMission()">🌟 今日のミッション</button>
+  </div>
+  <button class="btn btn-primary" onclick="showScreen('screen-levels')" style="margin-bottom:12px;">📚 レベルで練習する</button>
+  <button class="btn btn-secondary" onclick="showScreen('screen-stats')">📊 成績・ランキング</button>
+</div>
+
+<!-- ===== LEVEL SELECT SCREEN ===== -->
+<div class="screen" id="screen-levels">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+    <button class="back-btn" onclick="showScreen('screen-home')">← ホーム</button>
+    <h2 style="font-size:1.2rem;font-weight:900;">レベルを選ぶ</h2>
+  </div>
+  <p style="font-size:0.8rem;color:var(--gray);margin-bottom:14px;">各レベル10問正解でレベルアップ！</p>
+
+  <div class="level-grid" id="level-grid"></div>
+</div>
+
+<!-- ===== QUIZ SCREEN ===== -->
+<div class="screen" id="screen-quiz">
+  <div class="quiz-header">
+    <button class="back-btn" onclick="quitQuiz()">✕ やめる</button>
+    <div class="quiz-mode-badge" id="quiz-mode-badge">Lv1</div>
+    <div class="quiz-info" id="quiz-info">1/10</div>
+  </div>
+
+  <!-- Level progress during quiz -->
+  <div class="progress-wrap" style="margin-bottom:4px;">
+    <div class="progress-bar" id="quiz-lv-bar" style="width:0%"></div>
+  </div>
+  <div class="quiz-rank-strip" id="quiz-rank-strip"></div>
+
+  <div class="question-card">
+    <div class="question-label">このカタカナの読み方は？</div>
+    <div class="question-char" id="question-char">ア</div>
+    <div class="timer-bar-wrap">
+      <div class="timer-bar" id="timer-bar"></div>
+    </div>
+  </div>
+
+  <div class="choices" id="choices"></div>
+
+  <div style="text-align:center;font-size:0.85rem;color:var(--gray);" id="quiz-streak-display"></div>
+</div>
+
+<!-- ===== RESULT SCREEN ===== -->
+<div class="screen" id="screen-result">
+  <div class="card result-big">
+    <div class="result-emoji" id="result-emoji">🎉</div>
+    <div class="result-title" id="result-title">素晴らしい！</div>
+    <div class="result-score" id="result-score">10問中 10問正解</div>
+    <div class="result-points-label">獲得ポイント</div>
+    <div class="result-points" id="result-points">+100 ⭐</div>
+  </div>
+
+  <div class="card" id="result-daily-banner" style="display:none;background:linear-gradient(135deg,#fff9e6,#fff3cc);border:2px solid #ffd700;">
+    <div style="font-size:1rem;font-weight:800;color:#b8860b;" id="result-daily-msg"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">問題ごとの結果</div>
+    <div id="result-history"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">レベル進捗</div>
+    <div id="result-lv-info" style="font-size:0.9rem;color:var(--gray);margin-bottom:8px;"></div>
+    <div class="progress-wrap">
+      <div class="progress-bar" id="result-lv-bar" style="width:0%"></div>
+    </div>
+  </div>
+
+  <div class="btn-row" style="margin-top:8px;">
+    <button class="btn btn-secondary btn-sm" onclick="showScreen('screen-home')">🏠 ホーム</button>
+    <button class="btn btn-primary btn-sm" id="result-retry-btn" onclick="retryQuiz()">🔄 もう一度</button>
+  </div>
+</div>
+
+<!-- ===== STATS SCREEN ===== -->
+<div class="screen" id="screen-stats">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+    <button class="back-btn" onclick="showScreen('screen-home')">← ホーム</button>
+    <h2 style="font-size:1.2rem;font-weight:900;">成績・ランキング</h2>
+  </div>
+
+  <div class="card">
+    <div class="section-title">現在のランク</div>
+    <div id="stats-rank-card"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">ランク一覧</div>
+    <div id="rank-list"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">レベル別クリア状況</div>
+    <div id="stats-levels"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">総合成績</div>
+    <div id="stats-overall"></div>
+  </div>
+</div>
+
+<!-- ===== LEVEL UP OVERLAY ===== -->
+<div class="levelup-overlay" id="levelup-overlay" onclick="closeLevelUp()">
+  <div class="levelup-box" id="levelup-box">
+    <div class="levelup-stars">⭐⭐⭐</div>
+    <div class="levelup-label" id="levelup-label">LEVEL UP！</div>
+    <div class="levelup-title" id="levelup-title">Lv 2</div>
+    <div class="levelup-sub" id="levelup-sub">新しいカタカナが解放されました！</div>
+    <div class="levelup-new-chars" id="levelup-new-chars"></div>
+    <button class="btn btn-primary" style="margin-top:20px;width:auto;padding:12px 28px;" onclick="closeLevelUp()">続ける ▶</button>
+  </div>
+</div>
+
+<!-- Points popup -->
+<div class="points-popup" id="points-popup"></div>
+
+<script>
+// ===================================================
+// DATA DEFINITIONS
+// ===================================================
+const LEVELS = [
+  {
+    id: 1,
+    name: 'ア〜ソ行',
+    desc: 'ア・カ・サ行（15文字）',
+    preview: 'アイウエオ カキクケコ サシスセソ',
+    chars: [
+      { kana: 'ア', roma: 'a' }, { kana: 'イ', roma: 'i' }, { kana: 'ウ', roma: 'u' }, { kana: 'エ', roma: 'e' }, { kana: 'オ', roma: 'o' },
+      { kana: 'カ', roma: 'ka' }, { kana: 'キ', roma: 'ki' }, { kana: 'ク', roma: 'ku' }, { kana: 'ケ', roma: 'ke' }, { kana: 'コ', roma: 'ko' },
+      { kana: 'サ', roma: 'sa' }, { kana: 'シ', roma: 'shi' }, { kana: 'ス', roma: 'su' }, { kana: 'セ', roma: 'se' }, { kana: 'ソ', roma: 'so' },
+    ]
+  },
+  {
+    id: 2,
+    name: 'タ〜ホ行',
+    desc: 'タ・ナ・ハ行（15文字）',
+    preview: 'タチツテト ナニヌネノ ハヒフヘホ',
+    chars: [
+      { kana: 'タ', roma: 'ta' }, { kana: 'チ', roma: 'chi' }, { kana: 'ツ', roma: 'tsu' }, { kana: 'テ', roma: 'te' }, { kana: 'ト', roma: 'to' },
+      { kana: 'ナ', roma: 'na' }, { kana: 'ニ', roma: 'ni' }, { kana: 'ヌ', roma: 'nu' }, { kana: 'ネ', roma: 'ne' }, { kana: 'ノ', roma: 'no' },
+      { kana: 'ハ', roma: 'ha' }, { kana: 'ヒ', roma: 'hi' }, { kana: 'フ', roma: 'fu' }, { kana: 'ヘ', roma: 'he' }, { kana: 'ホ', roma: 'ho' },
+    ]
+  },
+  {
+    id: 3,
+    name: 'マ〜ン',
+    desc: 'マ・ヤ・ラ・ワ行（15文字）',
+    preview: 'マミムメモ ヤユヨ ラリルレロ ワヲン',
+    chars: [
+      { kana: 'マ', roma: 'ma' }, { kana: 'ミ', roma: 'mi' }, { kana: 'ム', roma: 'mu' }, { kana: 'メ', roma: 'me' }, { kana: 'モ', roma: 'mo' },
+      { kana: 'ヤ', roma: 'ya' }, { kana: 'ユ', roma: 'yu' }, { kana: 'ヨ', roma: 'yo' },
+      { kana: 'ラ', roma: 'ra' }, { kana: 'リ', roma: 'ri' }, { kana: 'ル', roma: 'ru' }, { kana: 'レ', roma: 're' }, { kana: 'ロ', roma: 'ro' },
+      { kana: 'ワ', roma: 'wa' }, { kana: 'ヲ', roma: 'wo' }, { kana: 'ン', roma: 'n' },
+    ]
+  },
+  {
+    id: 4,
+    name: '濁音',
+    desc: 'ガ・ザ・ダ・バ行（20文字）',
+    preview: 'ガギグゲゴ ザジズゼゾ ダデド バビブベボ',
+    chars: [
+      { kana: 'ガ', roma: 'ga' }, { kana: 'ギ', roma: 'gi' }, { kana: 'グ', roma: 'gu' }, { kana: 'ゲ', roma: 'ge' }, { kana: 'ゴ', roma: 'go' },
+      { kana: 'ザ', roma: 'za' }, { kana: 'ジ', roma: 'ji' }, { kana: 'ズ', roma: 'zu' }, { kana: 'ゼ', roma: 'ze' }, { kana: 'ゾ', roma: 'zo' },
+      { kana: 'ダ', roma: 'da' }, { kana: 'ヂ', roma: 'di' }, { kana: 'ヅ', roma: 'du' }, { kana: 'デ', roma: 'de' }, { kana: 'ド', roma: 'do' },
+      { kana: 'バ', roma: 'ba' }, { kana: 'ビ', roma: 'bi' }, { kana: 'ブ', roma: 'bu' }, { kana: 'ベ', roma: 'be' }, { kana: 'ボ', roma: 'bo' },
+    ]
+  },
+  {
+    id: 5,
+    name: '半濁音・拗音',
+    desc: 'パ行・キャ・シャ等 全混合',
+    preview: 'パピプペポ キャシャチャ ギャジャ…',
+    chars: [
+      { kana: 'パ', roma: 'pa' }, { kana: 'ピ', roma: 'pi' }, { kana: 'プ', roma: 'pu' }, { kana: 'ペ', roma: 'pe' }, { kana: 'ポ', roma: 'po' },
+      { kana: 'キャ', roma: 'kya' }, { kana: 'キュ', roma: 'kyu' }, { kana: 'キョ', roma: 'kyo' },
+      { kana: 'シャ', roma: 'sha' }, { kana: 'シュ', roma: 'shu' }, { kana: 'ショ', roma: 'sho' },
+      { kana: 'チャ', roma: 'cha' }, { kana: 'チュ', roma: 'chu' }, { kana: 'チョ', roma: 'cho' },
+      { kana: 'ニャ', roma: 'nya' }, { kana: 'ニュ', roma: 'nyu' }, { kana: 'ニョ', roma: 'nyo' },
+      { kana: 'ヒャ', roma: 'hya' }, { kana: 'ヒュ', roma: 'hyu' }, { kana: 'ヒョ', roma: 'hyo' },
+      { kana: 'ミャ', roma: 'mya' }, { kana: 'ミュ', roma: 'myu' }, { kana: 'ミョ', roma: 'myo' },
+      { kana: 'リャ', roma: 'rya' }, { kana: 'リュ', roma: 'ryu' }, { kana: 'リョ', roma: 'ryo' },
+      { kana: 'ギャ', roma: 'gya' }, { kana: 'ジャ', roma: 'ja' }, { kana: 'ビャ', roma: 'bya' }, { kana: 'ピャ', roma: 'pya' },
+    ]
+  },
+];
+
+const RANKS = [
+  { name: '見習い',       icon: '🔰', minPts: 0 },
+  { name: '修行中',       icon: '📖', minPts: 50 },
+  { name: 'カタカナ使い', icon: '⚡', minPts: 150 },
+  { name: 'カタカナ名人', icon: '🏆', minPts: 300 },
+  { name: 'カタカナ王',   icon: '👑', minPts: 600 },
+];
+
+const QUESTIONS_PER_QUIZ   = 10;
+const DAILY_QUESTIONS      = 5;
+const LEVEL_UP_CORRECT     = 10;
+const TIMER_SECONDS        = 8;
+const SPEED_BONUS_THRESHOLD = 4; // 4秒以内で速答ボーナス
+
+// ===================================================
+// STATE
+// ===================================================
+let state = loadState();
+
+function loadState() {
+  const def = {
+    currentLevel: 1,
+    totalPoints: 0,
+    streak: 0,
+    lastPlayDate: null,
+    levelProgress: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+    levelCleared:  { 1: false, 2: false, 3: false, 4: false, 5: false },
+    dailyDate: null,
+    dailyDone: 0,
+    dailyAnswered: 0,
+    totalCorrect: 0,
+    totalAnswered: 0,
+  };
+  try {
+    const saved = localStorage.getItem('katakana_quiz_state_v2');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return Object.assign({}, def, parsed);
+    }
+  } catch(e) {}
+  return def;
+}
+
+function saveState() {
+  localStorage.setItem('katakana_quiz_state_v2', JSON.stringify(state));
+}
+
+// ===================================================
+// QUIZ SESSION STATE
+// ===================================================
+let quizSession = null;
+
+// ===================================================
+// SCREEN MANAGEMENT
+// ===================================================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'screen-home')   renderHome();
+  if (id === 'screen-levels') renderLevelSelect();
+  if (id === 'screen-stats')  renderStats();
+}
+
+// ===================================================
+// DAILY MISSION CHECK
+// ===================================================
+function checkDailyReset() {
+  const today = getTodayStr();
+  if (state.dailyDate !== today) {
+    state.dailyDate    = today;
+    state.dailyDone    = 0;
+    state.dailyAnswered = 0;
+    saveState();
+  }
+}
+
+function getTodayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+}
+
+function updateStreak() {
+  const today = getTodayStr();
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  const yesterday = `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+  if (state.lastPlayDate === yesterday) {
+    state.streak += 1;
+  } else if (state.lastPlayDate !== today) {
+    state.streak = 1;
+  }
+  state.lastPlayDate = today;
+  saveState();
+}
+
+// ===================================================
+// RENDER HOME
+// ===================================================
+function renderHome() {
+  checkDailyReset();
+
+  document.getElementById('home-level').textContent  = 'Lv' + state.currentLevel;
+  document.getElementById('home-points').textContent = state.totalPoints;
+
+  const rank     = getCurrentRank();
+  const nextRank = getNextRank();
+  document.getElementById('home-level-name').textContent = rank.name;
+  document.getElementById('home-lv-badge').textContent   = 'Lv' + state.currentLevel;
+  document.getElementById('home-rank-icon').textContent  = rank.icon;
+  document.getElementById('home-rank-name').textContent  = rank.name;
+  document.getElementById('home-rank-pts').textContent   = state.totalPoints + ' ポイント獲得';
+  document.getElementById('home-streak').textContent     = state.streak;
+
+  // Level progress bar
+  const lvProgress = state.levelProgress[state.currentLevel] || 0;
+  const pct = Math.min(100, (lvProgress / LEVEL_UP_CORRECT) * 100);
+  document.getElementById('home-lv-bar').style.width = pct + '%';
+  const remaining = Math.max(0, LEVEL_UP_CORRECT - lvProgress);
+  document.getElementById('home-lv-next').textContent =
+    state.currentLevel >= 5
+      ? (state.levelCleared[5] ? '🎊 全レベルクリア！' : `あと${remaining}問でLv5クリア`)
+      : `次のレベルまであと${remaining}問`;
+
+  // XP rank bar
+  if (nextRank) {
+    const rankPct = Math.min(100, (state.totalPoints - rank.minPts) / (nextRank.minPts - rank.minPts) * 100);
+    document.getElementById('home-xp-label').textContent = rank.icon + ' ' + rank.name;
+    document.getElementById('home-xp-bar').style.width   = rankPct + '%';
+    document.getElementById('home-xp-val').textContent   = `→${nextRank.name}まで${nextRank.minPts - state.totalPoints}pt`;
+  } else {
+    document.getElementById('home-xp-label').textContent = '👑 最高ランク達成！';
+    document.getElementById('home-xp-bar').style.width   = '100%';
+    document.getElementById('home-xp-val').textContent   = '';
+  }
+
+  // Daily mission dots
+  const dotsEl = document.getElementById('daily-dots');
+  dotsEl.innerHTML = '';
+  for (let i = 0; i < DAILY_QUESTIONS; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'daily-dot' + (i < state.dailyAnswered ? ' done' : '');
+    dot.textContent = i < state.dailyAnswered ? '✓' : (i + 1);
+    dotsEl.appendChild(dot);
+  }
+
+  const isDailyDone = state.dailyAnswered >= DAILY_QUESTIONS;
+  document.getElementById('daily-complete-wrap').style.display = isDailyDone ? 'block' : 'none';
+
+  // Streak text
+  const streakEl = document.getElementById('streak-text');
+  if (state.streak >= 7) {
+    streakEl.textContent = `🔥🔥 ${state.streak}日連続！すごい！`;
+  } else if (state.streak >= 3) {
+    streakEl.textContent = `🔥 ${state.streak}日連続チャレンジ中！`;
+  } else if (state.streak >= 1) {
+    streakEl.textContent = `継続${state.streak}日目！`;
+  } else {
+    streakEl.textContent = '今日から始めよう！';
+  }
+
+  // Daily button state
+  const dailyBtn = document.getElementById('btn-daily');
+  if (isDailyDone) {
+    dailyBtn.textContent = '✅ 今日は完了！';
+    dailyBtn.disabled    = true;
+    dailyBtn.style.opacity = '0.6';
+  } else {
+    dailyBtn.textContent   = '🌟 今日のミッション';
+    dailyBtn.disabled      = false;
+    dailyBtn.style.opacity = '1';
+  }
+}
+
+// ===================================================
+// RENDER LEVEL SELECT
+// ===================================================
+function renderLevelSelect() {
+  const grid = document.getElementById('level-grid');
+  grid.innerHTML = '';
+  LEVELS.forEach(lv => {
+    const isUnlocked = lv.id <= state.currentLevel;
+    const isCleared  = state.levelCleared[lv.id];
+    const isCurrent  = lv.id === state.currentLevel && !isCleared;
+    const progress   = state.levelProgress[lv.id] || 0;
+    const pct        = Math.min(100, (progress / LEVEL_UP_CORRECT) * 100);
+
+    const item = document.createElement('div');
+    item.className = 'level-item'
+      + (isCleared ? ' cleared' : '')
+      + (!isUnlocked ? ' locked' : '')
+      + (isCurrent ? ' current-lv' : '');
+
+    const miniBar = isUnlocked && !isCleared
+      ? `<div class="lv-mini-bar"><div class="progress-wrap" style="height:6px;margin:0;"><div class="progress-bar" style="width:${pct}%;"></div></div></div>`
+      : '';
+
+    item.innerHTML = `
+      <div class="lv-num">${isCleared ? '✅' : (isUnlocked ? 'Lv'+lv.id : '🔒')}</div>
+      <div class="lv-name">Lv${lv.id} ${lv.name}</div>
+      <div class="lv-desc">${lv.desc}</div>
+      <div class="lv-progress">${
+        isCleared   ? 'クリア済み！' :
+        isUnlocked  ? `${progress}/${LEVEL_UP_CORRECT}問` :
+                      '前のレベルをクリアしよう'
+      }</div>
+      ${miniBar}
+    `;
+    if (!isUnlocked) {
+      item.innerHTML += `<div class="lock-icon">🔒</div>`;
+    }
+    if (isUnlocked) {
+      item.onclick = () => startQuiz(lv.id, false);
+    }
+    grid.appendChild(item);
+  });
+}
+
+// ===================================================
+// START QUIZ
+// ===================================================
+function startQuiz(levelId, isDaily) {
+  checkDailyReset();
+
+  const level  = LEVELS[levelId - 1];
+  const totalQ = isDaily ? DAILY_QUESTIONS : QUESTIONS_PER_QUIZ;
+
+  // Build question pool
+  let pool = [...level.chars];
+  // Lv5: full mix of all levels
+  if (levelId === 5) {
+    LEVELS.forEach(l => { if (l.id < 5) pool = pool.concat(l.chars); });
+  }
+
+  const questions = pickQuestions(pool, totalQ);
+
+  quizSession = {
+    levelId,
+    isDaily,
+    questions,
+    current: 0,
+    correct: 0,
+    earnedPoints: 0,
+    history: [],
+    timerStart: null,
+    timerTimeout: null,
+    answered: false,
+  };
+
+  renderQuiz();
+  showScreen('screen-quiz');
+}
+
+function startDailyMission() {
+  checkDailyReset();
+  if (state.dailyAnswered >= DAILY_QUESTIONS) return;
+  // Daily uses current unlocked level pool
+  startQuiz(state.currentLevel, true);
+}
+
+function pickQuestions(pool, count) {
+  const shuffled = [...pool].sort(() => Math.random() - 0.5);
+  const questions = [];
+  for (let i = 0; i < count; i++) {
+    questions.push(shuffled[i % shuffled.length]);
+  }
+  return questions;
+}
+
+// ===================================================
+// RENDER QUIZ
+// ===================================================
+function renderQuiz() {
+  if (!quizSession) return;
+  const { levelId, isDaily, questions, current } = quizSession;
+
+  const modeBadge = document.getElementById('quiz-mode-badge');
+  modeBadge.textContent = isDaily ? '🌟 デイリー' : `Lv${levelId}`;
+  modeBadge.className   = 'quiz-mode-badge' + (isDaily ? ' daily' : '');
+
+  document.getElementById('quiz-info').textContent = `${current + 1}/${questions.length}`;
+
+  // Level bar
+  const lvProgress = state.levelProgress[levelId] || 0;
+  const pct = Math.min(100, (lvProgress / LEVEL_UP_CORRECT) * 100);
+  document.getElementById('quiz-lv-bar').style.width = pct + '%';
+
+  // Rank strip
+  const rank = getCurrentRank();
+  document.getElementById('quiz-rank-strip').textContent =
+    rank.icon + ' ' + rank.name + ' — ' + state.totalPoints + 'pt';
+
+  // Question
+  const q = questions[current];
+  const charEl = document.getElementById('question-char');
+  charEl.textContent = q.kana;
+  charEl.classList.remove('bounce-in');
+  void charEl.offsetWidth;
+  charEl.classList.add('bounce-in');
+
+  // Generate choices
+  const choices = generateChoices(q, levelId);
+  const choicesEl = document.getElementById('choices');
+  choicesEl.innerHTML = '';
+  choices.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className  = 'choice-btn';
+    btn.textContent = c.roma;
+    btn.dataset.roma = c.roma;
+    btn.onclick = () => answerQuestion(c.roma, q.roma, btn);
+    choicesEl.appendChild(btn);
+  });
+
+  quizSession.answered = false;
+  startTimer();
+  updateStreakDisplay();
+}
+
+function generateChoices(q, levelId) {
+  let pool = [];
+  LEVELS.forEach(lv => {
+    if (lv.id <= Math.max(levelId, 1)) pool = pool.concat(lv.chars);
+  });
+
+  const wrong = pool
+    .filter(c => c.roma !== q.roma)
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 3);
+
+  return [q, ...wrong].sort(() => Math.random() - 0.5);
+}
+
+// ===================================================
+// TIMER
+// ===================================================
+function startTimer() {
+  clearTimeout(quizSession.timerTimeout);
+  quizSession.timerStart = Date.now();
+  const timerBar = document.getElementById('timer-bar');
+  timerBar.style.width      = '100%';
+  timerBar.style.transition = 'none';
+  void timerBar.offsetWidth;
+  timerBar.style.transition = `width ${TIMER_SECONDS}s linear`;
+  timerBar.style.width      = '0%';
+
+  quizSession.timerTimeout = setTimeout(() => {
+    if (!quizSession.answered) timeUp();
+  }, TIMER_SECONDS * 1000);
+}
+
+function stopTimer() {
+  clearTimeout(quizSession.timerTimeout);
+}
+
+function timeUp() {
+  quizSession.answered = true;
+  const q = quizSession.questions[quizSession.current];
+  document.querySelectorAll('.choice-btn').forEach(btn => {
+    btn.disabled = true;
+    if (btn.dataset.roma === q.roma) btn.classList.add('correct');
+  });
+  quizSession.history.push({ kana: q.kana, roma: q.roma, given: '(時間切れ)', correct: false });
+  quizSession.current++;
+  setTimeout(() => nextOrResult(), 1200);
+}
+
+// ===================================================
+// ANSWER
+// ===================================================
+function answerQuestion(given, correct, btn) {
+  if (quizSession.answered) return;
+  quizSession.answered = true;
+  stopTimer();
+
+  const elapsed   = (Date.now() - quizSession.timerStart) / 1000;
+  const isCorrect = given === correct;
+
+  document.querySelectorAll('.choice-btn').forEach(b => {
+    b.disabled = true;
+    if (b.dataset.roma === correct) b.classList.add('correct');
+  });
+
+  if (isCorrect) {
+    btn.classList.add('correct');
+    quizSession.correct++;
+
+    let pts = 10;
+    const speedBonus = elapsed <= SPEED_BONUS_THRESHOLD;
+    if (speedBonus) pts += 5;
+    quizSession.earnedPoints += pts;
+
+    showPointsPopup('+' + pts + ' ⭐' + (speedBonus ? '\n速答ボーナス！' : ''));
+  } else {
+    btn.classList.add('wrong');
+    const charEl = document.getElementById('question-char');
+    charEl.classList.add('shake');
+    setTimeout(() => charEl.classList.remove('shake'), 400);
+  }
+
+  quizSession.history.push({
+    kana: quizSession.questions[quizSession.current].kana,
+    roma: correct,
+    given,
+    correct: isCorrect,
+  });
+  quizSession.current++;
+
+  setTimeout(() => nextOrResult(), 900);
+}
+
+function nextOrResult() {
+  if (quizSession.current < quizSession.questions.length) {
+    renderQuiz();
+  } else {
+    finishQuiz();
+  }
+}
+
+// ===================================================
+// FINISH QUIZ
+// ===================================================
+function finishQuiz() {
+  const { levelId, isDaily, correct, questions, earnedPoints } = quizSession;
+
+  updateStreak();
+
+  state.totalPoints   += earnedPoints;
+  state.totalCorrect  += correct;
+  state.totalAnswered += questions.length;
+
+  // Level progress
+  const prev   = state.levelProgress[levelId] || 0;
+  const newProg = prev + correct;
+  state.levelProgress[levelId] = newProg;
+
+  let didLevelUp = false;
+  if (newProg >= LEVEL_UP_CORRECT && !state.levelCleared[levelId] && levelId === state.currentLevel) {
+    state.levelCleared[levelId] = true;
+    if (state.currentLevel < 5) {
+      state.currentLevel++;
+      state.levelProgress[state.currentLevel] = state.levelProgress[state.currentLevel] || 0;
+      didLevelUp = true;
+    } else {
+      state.levelCleared[5] = true;
+    }
+  }
+
+  // Daily progress
+  if (isDaily) {
+    state.dailyAnswered = Math.min(DAILY_QUESTIONS, (state.dailyAnswered || 0) + questions.length);
+    state.dailyDone     = (state.dailyDone || 0) + correct;
+  }
+
+  saveState();
+  showResult(isDaily, didLevelUp);
+}
+
+// ===================================================
+// SHOW RESULT
+// ===================================================
+function showResult(isDaily, didLevelUp) {
+  const { levelId, correct, questions, earnedPoints, history } = quizSession;
+  const total = questions.length;
+  const pct   = correct / total;
+
+  let emoji = '😢', title = 'もう少し！';
+  if (pct >= 1.0) { emoji = '🏆'; title = '満点！パーフェクト！'; }
+  else if (pct >= 0.8) { emoji = '🎉'; title = '素晴らしい！'; }
+  else if (pct >= 0.6) { emoji = '👍'; title = 'よくできました！'; }
+  else if (pct >= 0.4) { emoji = '😊'; title = 'まあまあ！'; }
+
+  document.getElementById('result-emoji').textContent  = emoji;
+  document.getElementById('result-title').textContent  = title;
+  document.getElementById('result-score').textContent  = `${total}問中 ${correct}問正解`;
+  document.getElementById('result-points').textContent = `+${earnedPoints} ⭐`;
+
+  // Daily banner
+  const dailyBanner = document.getElementById('result-daily-banner');
+  const dailyMsg    = document.getElementById('result-daily-msg');
+  if (isDaily) {
+    const isDone = state.dailyAnswered >= DAILY_QUESTIONS;
+    dailyBanner.style.display = 'block';
+    dailyMsg.textContent = isDone
+      ? '🎉 今日のミッション完了！' + (state.streak >= 3 ? ` 🔥${state.streak}日連続！` : '')
+      : `🌟 今日のミッション: ${state.dailyAnswered}/${DAILY_QUESTIONS}問完了`;
+  } else {
+    dailyBanner.style.display = 'none';
+  }
+
+  // History
+  const histEl = document.getElementById('result-history');
+  histEl.innerHTML = '';
+  history.forEach(h => {
+    const row = document.createElement('div');
+    row.className = 'history-item';
+    const status = h.correct
+      ? `<span class="history-correct">✓ 正解</span>`
+      : `<span class="history-wrong">✗ ${h.given === '(時間切れ)' ? '時間切れ' : `${h.given} → 正解: ${h.roma}`}</span>`;
+    row.innerHTML = `<span>${h.kana} （${h.roma}）</span>${status}`;
+    histEl.appendChild(row);
+  });
+
+  // Level progress bar
+  const lvProgress = state.levelProgress[levelId] || 0;
+  const pctLv = Math.min(100, (lvProgress / LEVEL_UP_CORRECT) * 100);
+  document.getElementById('result-lv-bar').style.width = '0%';
+  document.getElementById('result-lv-info').textContent =
+    state.levelCleared[levelId]
+      ? `Lv${levelId} クリア済み ✅`
+      : `Lv${levelId}: ${lvProgress}/${LEVEL_UP_CORRECT}問クリア`;
+
+  showScreen('screen-result');
+  setTimeout(() => {
+    document.getElementById('result-lv-bar').style.width = pctLv + '%';
+  }, 300);
+
+  // Level up after short delay
+  if (didLevelUp) {
+    setTimeout(() => showLevelUp(state.currentLevel), 1500);
+  } else if (state.levelCleared[5] && levelId === 5) {
+    setTimeout(() => showAllClear(), 1500);
+  }
+}
+
+function retryQuiz() {
+  if (!quizSession) return;
+  startQuiz(quizSession.levelId, quizSession.isDaily);
+}
+
+function quitQuiz() {
+  stopTimer();
+  quizSession = null;
+  showScreen('screen-home');
+}
+
+// ===================================================
+// POINTS POPUP
+// ===================================================
+function showPointsPopup(text) {
+  const el = document.getElementById('points-popup');
+  el.textContent = text;
+  el.className   = 'points-popup show';
+  setTimeout(() => { el.className = 'points-popup hide'; }, 1000);
+  setTimeout(() => { el.className = 'points-popup'; }, 1400);
+}
+
+// ===================================================
+// LEVEL UP
+// ===================================================
+function showLevelUp(newLevel) {
+  const newLvData = LEVELS[newLevel - 1];
+  const box = document.getElementById('levelup-box');
+  box.className = 'levelup-box';
+
+  document.getElementById('levelup-label').textContent     = 'LEVEL UP！';
+  document.getElementById('levelup-title').textContent     = 'Lv ' + newLevel;
+  document.getElementById('levelup-sub').textContent       = `Lv${newLevel}の新しいカタカナが解放されました！`;
+  document.getElementById('levelup-new-chars').textContent = newLvData ? newLvData.preview : '';
+
+  document.getElementById('levelup-overlay').classList.add('show');
+  launchConfetti(80);
+}
+
+function showAllClear() {
+  const box = document.getElementById('levelup-box');
+  box.className = 'levelup-box allclear-box';
+
+  document.getElementById('levelup-label').textContent     = '全レベルクリア！';
+  document.getElementById('levelup-title').textContent     = '👑 カタカナ王';
+  document.getElementById('levelup-sub').textContent       = 'すべてのカタカナをマスターした！';
+  document.getElementById('levelup-new-chars').textContent = 'おめでとうございます！';
+
+  document.getElementById('levelup-overlay').classList.add('show');
+  launchConfetti(120);
+}
+
+function closeLevelUp() {
+  document.getElementById('levelup-overlay').classList.remove('show');
+}
+
+function launchConfetti(count) {
+  const colors = ['#6c63ff','#ff6584','#ffd700','#2ecc71','#9b59b6','#3498db','#e74c3c','#1abc9c'];
+  for (let i = 0; i < count; i++) {
+    setTimeout(() => {
+      const piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      piece.style.left             = Math.random() * 100 + 'vw';
+      piece.style.background       = colors[Math.floor(Math.random() * colors.length)];
+      piece.style.animationDuration = (1.2 + Math.random() * 2.5) + 's';
+      piece.style.animationDelay   = '0s';
+      piece.style.width            = (7 + Math.random() * 9) + 'px';
+      piece.style.height           = (7 + Math.random() * 9) + 'px';
+      piece.style.borderRadius     = Math.random() > 0.5 ? '50%' : '2px';
+      document.body.appendChild(piece);
+      setTimeout(() => piece.remove(), 4500);
+    }, i * 25);
+  }
+}
+
+// ===================================================
+// RANK HELPERS
+// ===================================================
+function getCurrentRank() {
+  let rank = RANKS[0];
+  RANKS.forEach(r => { if (state.totalPoints >= r.minPts) rank = r; });
+  return rank;
+}
+
+function getNextRank() {
+  let idx = 0;
+  RANKS.forEach((r, i) => { if (state.totalPoints >= r.minPts) idx = i; });
+  return idx < RANKS.length - 1 ? RANKS[idx + 1] : null;
+}
+
+// ===================================================
+// STATS SCREEN
+// ===================================================
+function renderStats() {
+  const rank     = getCurrentRank();
+  const nextRank = getNextRank();
+
+  // Current rank
+  document.getElementById('stats-rank-card').innerHTML = `
+    <div class="rank-card">
+      <div class="rank-icon">${rank.icon}</div>
+      <div class="rank-info">
+        <div class="rank-name">${rank.name}</div>
+        <div class="rank-pts">${state.totalPoints} ポイント獲得</div>
+        ${nextRank
+          ? `<div style="font-size:0.7rem;color:var(--primary);margin-top:2px;">次のランクまで ${nextRank.minPts - state.totalPoints}pt</div>`
+          : '<div style="font-size:0.7rem;color:var(--gold);">最高ランク達成！👑</div>'}
+      </div>
+    </div>
+    ${nextRank ? `<div class="progress-wrap" style="margin-top:10px;"><div class="progress-bar" style="width:${Math.min(100,(state.totalPoints - rank.minPts) / (nextRank.minPts - rank.minPts) * 100)}%"></div></div>` : ''}
+  `;
+
+  // Rank list
+  const rankListEl = document.getElementById('rank-list');
+  rankListEl.innerHTML = '';
+  RANKS.forEach(r => {
+    const isCurrentOrPast = state.totalPoints >= r.minPts;
+    const isCurrent       = rank.name === r.name;
+    const div = document.createElement('div');
+    div.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bg);';
+    div.innerHTML = `
+      <span style="font-size:1.5rem;opacity:${isCurrentOrPast?1:0.4}">${r.icon}</span>
+      <span style="font-weight:${isCurrent?900:600};color:${isCurrent?'var(--primary)':'var(--text)'};opacity:${isCurrentOrPast?1:0.5};">${r.name}</span>
+      <span style="margin-left:auto;font-size:0.75rem;color:var(--gray);">${r.minPts}pt〜</span>
+      ${isCurrent ? '<span style="background:var(--primary);color:#fff;border-radius:20px;padding:2px 8px;font-size:0.7rem;font-weight:700;">NOW</span>' : ''}
+    `;
+    rankListEl.appendChild(div);
+  });
+
+  // Level status
+  const statsLevels = document.getElementById('stats-levels');
+  statsLevels.innerHTML = '';
+  LEVELS.forEach(lv => {
+    const isUnlocked = lv.id <= state.currentLevel;
+    const progress   = state.levelProgress[lv.id] || 0;
+    const cleared    = state.levelCleared[lv.id];
+    const pct        = Math.min(100, (progress / LEVEL_UP_CORRECT) * 100);
+    const div = document.createElement('div');
+    div.style.cssText = 'margin-bottom:14px;';
+    div.innerHTML = `
+      <div style="display:flex;justify-content:space-between;font-size:0.85rem;font-weight:700;margin-bottom:4px;opacity:${isUnlocked?1:0.4}">
+        <span>Lv${lv.id} ${lv.name} ${cleared ? '✅' : (isUnlocked ? '' : '🔒')}</span>
+        <span>${isUnlocked ? progress + '/' + LEVEL_UP_CORRECT : 'ロック中'}</span>
+      </div>
+      ${isUnlocked ? `<div class="progress-wrap"><div class="progress-bar" style="width:${pct}%"></div></div>` : ''}
+    `;
+    statsLevels.appendChild(div);
+  });
+
+  // Overall
+  const acc = state.totalAnswered > 0
+    ? Math.round(state.totalCorrect / state.totalAnswered * 100) + '%'
+    : '---';
+  document.getElementById('stats-overall').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="stat-box"><div class="stat-label">総回答数</div><div class="stat-value">${state.totalAnswered}</div></div>
+      <div class="stat-box"><div class="stat-label">正解率</div><div class="stat-value">${acc}</div></div>
+      <div class="stat-box"><div class="stat-label">累計ポイント</div><div class="stat-value">${state.totalPoints}</div></div>
+      <div class="stat-box"><div class="stat-label">連続日数</div><div class="stat-value">${state.streak}日</div></div>
+    </div>
+  `;
+}
+
+// ===================================================
+// STREAK DISPLAY DURING QUIZ
+// ===================================================
+function updateStreakDisplay() {
+  const el = document.getElementById('quiz-streak-display');
+  if (state.streak >= 7) {
+    el.textContent = `🔥🔥 ${state.streak}日連続！`;
+  } else if (state.streak >= 3) {
+    el.textContent = `🔥 ${state.streak}日連続チャレンジ中！`;
+  } else {
+    el.textContent = '';
+  }
+}
+
+// ===================================================
+// INIT
+// ===================================================
+checkDailyReset();
+renderHome();
+</script>
+</body>
+</html>
