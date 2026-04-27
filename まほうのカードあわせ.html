@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>まほうのカードあわせ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kaisei+Decol:wght@400;700&family=Yomogi&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { width: 100%; height: 100%; overflow-x: hidden; }
+        body {
+            font-family: 'Kaisei Decol', 'Hiragino Maru Gothic ProN', 'ヒラギノ丸ゴ ProN', sans-serif;
+            background: linear-gradient(135deg, #0d0630 0%, #1a0a4a 25%, #0a1a5c 50%, #1a0a4a 75%, #0d0630 100%);
+            min-height: 100vh; color: #fff; position: relative;
+        }
+        body::before {
+            content: ''; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(ellipse at 20% 20%, rgba(120,60,220,0.25) 0%, transparent 50%),
+                        radial-gradient(ellipse at 80% 80%, rgba(60,100,220,0.25) 0%, transparent 50%);
+            pointer-events: none; z-index: 0;
+        }
+        body::after {
+            content: '✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦';
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            font-size: 10px; line-height: 2.2; letter-spacing: 18px;
+            color: rgba(255,240,180,0.12); pointer-events: none; z-index: 0; overflow: hidden; word-break: break-all;
+        }
+        #game-container {
+            position: relative; z-index: 1; display: flex; flex-direction: column;
+            align-items: center; padding: 20px 16px 30px; min-height: 100vh; gap: 18px;
+        }
+        #title {
+            font-size: clamp(1.6rem, 4vw, 2.6rem); font-weight: 700; text-align: center;
+            letter-spacing: 0.05em; line-height: 1.3;
+            background: linear-gradient(90deg, #ffd700 0%, #ff9de2 25%, #a78bff 50%, #7dd3fc 75%, #ffd700 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+            filter: drop-shadow(0 0 12px rgba(200,150,255,0.8)) drop-shadow(0 0 24px rgba(150,100,255,0.5));
+            animation: titleGlow 3s ease-in-out infinite alternate;
+        }
+        @keyframes titleGlow {
+            from { filter: drop-shadow(0 0 8px rgba(200,150,255,0.6)) drop-shadow(0 0 20px rgba(150,100,255,0.4)); }
+            to   { filter: drop-shadow(0 0 18px rgba(220,170,255,1.0)) drop-shadow(0 0 36px rgba(170,120,255,0.7)); }
+        }
+        #score-area {
+            display: flex; align-items: center; gap: 28px;
+            background: rgba(255,255,255,0.08); border: 2px solid rgba(200,160,255,0.35);
+            border-radius: 50px; padding: 10px 28px; backdrop-filter: blur(8px);
+            box-shadow: 0 0 20px rgba(160,100,255,0.2), inset 0 1px 0 rgba(255,255,255,0.15);
+        }
+        #score-display { font-size: clamp(1rem, 2.5vw, 1.3rem); font-weight: 700; color: #e9d5ff; }
+        #score-display span { font-size: 1.4em; color: #fde68a; text-shadow: 0 0 10px rgba(253,230,138,0.8); }
+        #timer { font-size: clamp(1rem, 2.5vw, 1.3rem); font-weight: 700; color: #bae6fd; }
+        #restart-btn-sub {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: rgba(255,255,255,0.1); color: #e9d5ff;
+            font-family: inherit; font-size: clamp(0.8rem, 1.8vw, 1rem); font-weight: 700;
+            padding: 8px 20px; border: 2px solid rgba(200,160,255,0.4); border-radius: 50px;
+            cursor: pointer; transition: all 0.15s; -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+        }
+        #restart-btn-sub:active { transform: scale(0.95); }
+        #card-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: clamp(10px, 2vw, 16px); width: 100%; max-width: 720px;
+        }
+        .card {
+            width: 100%; aspect-ratio: 1/1; max-width: 165px; justify-self: center;
+            cursor: pointer; perspective: 1000px; user-select: none;
+            -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+        }
+        .card-inner {
+            position: relative; width: 100%; height: 100%;
+            transform-style: preserve-3d;
+            transition: transform 0.5s cubic-bezier(0.4,0,0.2,1);
+            border-radius: 18px;
+        }
+        .card-front, .card-back {
+            position: absolute; inset: 0; border-radius: 18px;
+            backface-visibility: hidden; -webkit-backface-visibility: hidden;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;
+        }
+        .card-back {
+            background: linear-gradient(145deg, #2d1b69 0%, #1e1052 40%, #0f0840 100%);
+            border: 2.5px solid rgba(180,130,255,0.5);
+            box-shadow: 0 0 0 1px rgba(120,80,200,0.3), 0 8px 24px rgba(0,0,0,0.5), inset 0 0 40px rgba(100,50,200,0.2);
+        }
+        .card-back::before {
+            content: ''; position: absolute; inset: 8px; border-radius: 50%;
+            border: 1.5px solid rgba(180,130,255,0.45);
+            box-shadow: 0 0 0 6px rgba(140,90,240,0.12), 0 0 0 12px rgba(120,70,220,0.08), 0 0 12px rgba(200,150,255,0.3);
+        }
+        .card-back::after {
+            content: '✦'; font-size: clamp(2rem, 5vw, 3rem);
+            color: rgba(220,180,255,0.65);
+            text-shadow: 0 0 10px rgba(200,150,255,0.9), 0 0 24px rgba(160,100,255,0.6);
+            animation: rotateStar 8s linear infinite;
+        }
+        @keyframes rotateStar { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .back-deco { position: absolute; font-size: 0.7rem; color: rgba(200,170,255,0.5); pointer-events: none; }
+        .back-deco-top    { top: 12px; left: 50%; transform: translateX(-50%); }
+        .back-deco-bottom { bottom: 12px; left: 50%; transform: translateX(-50%); }
+        .back-deco-left   { left: 10px; top: 50%; transform: translateY(-50%); }
+        .back-deco-right  { right: 10px; top: 50%; transform: translateY(-50%); }
+        .back-deco-tl { top: 20px; left: 18px; font-size: 0.55rem; opacity: 0.6; }
+        .back-deco-tr { top: 20px; right: 18px; font-size: 0.55rem; opacity: 0.6; }
+        .back-deco-bl { bottom: 20px; left: 18px; font-size: 0.55rem; opacity: 0.6; }
+        .back-deco-br { bottom: 20px; right: 18px; font-size: 0.55rem; opacity: 0.6; }
+        .card-front {
+            transform: rotateY(180deg);
+            background: linear-gradient(145deg, #f3e8ff 0%, #ede9fe 50%, #ddd6fe 100%);
+            border: 3px solid rgba(167,139,250,0.6);
+            box-shadow: 0 0 0 1px rgba(200,170,255,0.4), 0 8px 24px rgba(0,0,0,0.4),
+                        inset 0 2px 0 rgba(255,255,255,0.8);
+            gap: 6px;
+        }
+        .card-front::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 45%;
+            background: linear-gradient(180deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0) 100%);
+            border-radius: 15px 15px 0 0; pointer-events: none;
+        }
+        .card-emoji { font-size: clamp(2.8rem, 7vw, 4rem); line-height: 1; filter: drop-shadow(0 3px 6px rgba(100,60,180,0.35)); z-index: 1; }
+        .card-label { font-size: clamp(0.65rem, 1.5vw, 0.85rem); font-weight: 700; color: #5b21b6; text-align: center; z-index: 1; }
+        .card.flipped .card-inner { transform: rotateY(180deg); }
+        .card.matched .card-inner { transform: rotateY(180deg); }
+        .card.matched .card-front {
+            background: linear-gradient(145deg, #fef3c7 0%, #fde68a 40%, #fbbf24 100%);
+            border-color: rgba(251,191,36,0.8);
+            box-shadow: 0 0 0 2px rgba(251,191,36,0.5), 0 0 24px rgba(253,224,71,0.5);
+            animation: matchPulse 0.6s ease-out;
+        }
+        .card.matched .card-front::after {
+            content: '⭐'; position: absolute; top: 5px; right: 8px; font-size: 0.9em;
+            animation: starPop 0.4s ease-out 0.2s both;
+        }
+        @keyframes matchPulse {
+            0%   { transform: rotateY(180deg) scale(1); }
+            30%  { transform: rotateY(180deg) scale(1.12); }
+            60%  { transform: rotateY(180deg) scale(0.96); }
+            100% { transform: rotateY(180deg) scale(1); }
+        }
+        @keyframes starPop {
+            0%   { transform: scale(0) rotate(-30deg); opacity: 0; }
+            60%  { transform: scale(1.3) rotate(10deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        .card:active .card-inner { transform: scale(0.93); transition: transform 0.1s; }
+        .card.flipped:active .card-inner, .card.matched:active .card-inner { transform: rotateY(180deg) scale(1); }
+        #message {
+            display: none; position: fixed; inset: 0; z-index: 100;
+            background: rgba(5,2,25,0.75); backdrop-filter: blur(6px);
+            align-items: center; justify-content: center; animation: fadeIn 0.4s ease;
+        }
+        #message.visible { display: flex; }
+        .message-box {
+            background: linear-gradient(145deg, #2e1065 0%, #1e0a4a 60%, #0d0630 100%);
+            border: 3px solid rgba(220,170,255,0.5); border-radius: 28px; padding: 40px 48px;
+            text-align: center; box-shadow: 0 0 60px rgba(160,100,255,0.4); max-width: 420px; width: 90%;
+            animation: popIn 0.5s cubic-bezier(0.175,0.885,0.32,1.275);
+        }
+        .message-emoji { font-size: 4rem; display: block; margin-bottom: 12px; animation: bounce 1s ease-in-out infinite alternate; }
+        @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-10px); } }
+        .message-title {
+            font-size: clamp(1.5rem, 4vw, 2rem); font-weight: 700; margin-bottom: 10px;
+            background: linear-gradient(90deg, #ffd700, #ff9de2, #a78bff, #ffd700);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .message-sub { font-size: clamp(0.9rem, 2.5vw, 1.1rem); color: #c4b5fd; margin-bottom: 28px; line-height: 1.6; }
+        #clear-time { color: #fde68a; font-weight: 700; font-size: 1.1em; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        #restart-btn {
+            display: inline-flex; align-items: center; gap: 10px;
+            background: linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #c084fc 100%);
+            color: #fff; font-family: inherit; font-size: clamp(1rem, 2.5vw, 1.25rem); font-weight: 700;
+            letter-spacing: 0.1em; padding: 16px 40px; border: none; border-radius: 50px; cursor: pointer;
+            box-shadow: 0 4px 0 #5b21b6, 0 8px 24px rgba(124,58,237,0.5);
+            transition: all 0.15s ease; -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+        }
+        #restart-btn:active { transform: translateY(2px); }
+        .confetti-piece {
+            position: fixed; top: -20px; z-index: 200; pointer-events: none;
+            animation: confettiFall linear forwards;
+        }
+        @keyframes confettiFall {
+            to { transform: translateY(110vh) translateX(var(--drift, 0px)) rotate(720deg); opacity: 0; }
+        }
+        @media (max-width: 600px) {
+            #card-grid { gap: 8px; max-width: 98vw; }
+            #score-area { padding: 8px 18px; gap: 16px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .card-inner { transition: none; }
+            #title, .card-back::after, .message-emoji { animation: none; }
+        }
+    </style>
+</head>
+<body>
+<div id="game-container">
+    <h1 id="title">✨ まほうのカードあわせ ✨</h1>
+    <div id="score-area">
+        <div id="score-display">みつけた：<span id="matched-count">0</span> / 8</div>
+        <div id="timer">⏱ 00:00</div>
+        <button id="restart-btn-sub" type="button">🔄 もういちど</button>
+    </div>
+    <main id="card-grid" role="main" aria-label="カードあわせゲーム"></main>
+</div>
+
+<div id="message" role="dialog" aria-modal="true">
+    <div class="message-box">
+        <span class="message-emoji">🎉</span>
+        <h2 class="message-title">ぜんぶみつけたよ！</h2>
+        <p class="message-sub">
+            すごい！まほうのカードを<br>ぜんぶそろえたね！<br>
+            タイム：<span id="clear-time">00:00</span>
+        </p>
+        <button id="restart-btn" type="button">✨ もういちどあそぶ</button>
+    </div>
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    const CARD_TYPES = [
+        { type: 'wizard',    emoji: '🧙', label: 'まほうつかい' },
+        { type: 'dragon',    emoji: '🐉', label: 'ドラゴン'     },
+        { type: 'fairy',     emoji: '🧚', label: 'ようせい'     },
+        { type: 'castle',    emoji: '🏰', label: 'おしろ'       },
+        { type: 'gem',       emoji: '💎', label: 'たからもの'   },
+        { type: 'lightning', emoji: '⚡', label: 'いなずま'     },
+        { type: 'moon',      emoji: '🌙', label: 'おつきさま'   },
+        { type: 'unicorn',   emoji: '🦄', label: 'ユニコーン'   },
+    ];
+
+    const cardGrid     = document.getElementById('card-grid');
+    const matchedCount = document.getElementById('matched-count');
+    const timerEl      = document.getElementById('timer');
+    const messageEl    = document.getElementById('message');
+    const clearTimeEl  = document.getElementById('clear-time');
+    const restartBtn   = document.getElementById('restart-btn');
+    const restartSub   = document.getElementById('restart-btn-sub');
+
+    let flippedCards = [], matchedPairs = 0, isLocked = false;
+    let timerInterval = null, elapsedSec = 0, gameStarted = false;
+
+    function shuffle(arr) {
+        const a = [...arr];
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+    }
+
+    function formatTime(sec) {
+        return String(Math.floor(sec / 60)).padStart(2,'0') + ':' + String(sec % 60).padStart(2,'0');
+    }
+
+    function startTimer() {
+        if (timerInterval) return;
+        timerInterval = setInterval(() => { elapsedSec++; timerEl.textContent = '⏱ ' + formatTime(elapsedSec); }, 1000);
+    }
+
+    function stopTimer() {
+        clearInterval(timerInterval); timerInterval = null;
+    }
+
+    function makeBackHTML() {
+        return `<div class="card-back" aria-hidden="true">
+            <span class="back-deco back-deco-top">✦</span>
+            <span class="back-deco back-deco-bottom">✦</span>
+            <span class="back-deco back-deco-left">✧</span>
+            <span class="back-deco back-deco-right">✧</span>
+            <span class="back-deco back-deco-tl">★</span>
+            <span class="back-deco back-deco-tr">★</span>
+            <span class="back-deco back-deco-bl">★</span>
+            <span class="back-deco back-deco-br">★</span>
+        </div>`;
+    }
+
+    function renderCards() {
+        const deck = shuffle([...CARD_TYPES, ...CARD_TYPES]);
+        cardGrid.innerHTML = '';
+        deck.forEach(c => {
+            const el = document.createElement('article');
+            el.className = 'card';
+            el.setAttribute('role','button'); el.setAttribute('tabindex','0');
+            el.dataset.cardType = c.type;
+            el.innerHTML = `<div class="card-inner">
+                ${makeBackHTML()}
+                <div class="card-front" aria-hidden="true">
+                    <span class="card-emoji">${c.emoji}</span>
+                    <span class="card-label">${c.label}</span>
+                </div>
+            </div>`;
+            el.addEventListener('click', () => onFlip(el));
+            el.addEventListener('keydown', e => { if (e.key==='Enter'||e.key===' ') { e.preventDefault(); onFlip(el); } });
+            cardGrid.appendChild(el);
+        });
+    }
+
+    function onFlip(card) {
+        if (isLocked || card.classList.contains('flipped') || card.classList.contains('matched')) return;
+        if (!gameStarted) { gameStarted = true; startTimer(); }
+        card.classList.add('flipped');
+        flippedCards.push(card);
+        if (flippedCards.length === 2) { isLocked = true; setTimeout(checkMatch, 800); }
+    }
+
+    function checkMatch() {
+        const [a, b] = flippedCards;
+        if (a.dataset.cardType === b.dataset.cardType) {
+            a.classList.add('matched'); b.classList.add('matched');
+            matchedPairs++;
+            matchedCount.textContent = matchedPairs;
+            flippedCards = []; isLocked = false;
+            if (matchedPairs === CARD_TYPES.length) setTimeout(onClear, 500);
+        } else {
+            setTimeout(() => {
+                a.classList.remove('flipped'); b.classList.remove('flipped');
+                flippedCards = []; isLocked = false;
+            }, 600);
+        }
+    }
+
+    function launchConfetti() {
+        const colors = ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff922b','#cc5de8'];
+        for (let i = 0; i < 80; i++) {
+            const p = document.createElement('div');
+            p.className = 'confetti-piece';
+            p.style.left = Math.random()*100 + 'vw';
+            p.style.background = colors[Math.floor(Math.random()*colors.length)];
+            p.style.width = (6+Math.random()*8) + 'px';
+            p.style.height = (10+Math.random()*8) + 'px';
+            p.style.borderRadius = Math.random()>0.5 ? '50%' : '2px';
+            p.style.animationDuration = (1.5+Math.random()*2) + 's';
+            p.style.animationDelay = (Math.random()*0.8) + 's';
+            p.style.setProperty('--drift', ((Math.random()-0.5)*120)+'px');
+            document.body.appendChild(p);
+            p.addEventListener('animationend', () => p.remove());
+        }
+    }
+
+    function onClear() {
+        stopTimer();
+        launchConfetti();
+        clearTimeEl.textContent = formatTime(elapsedSec);
+        messageEl.classList.add('visible');
+    }
+
+    function restartGame() {
+        stopTimer();
+        flippedCards = []; matchedPairs = 0; isLocked = false;
+        elapsedSec = 0; gameStarted = false;
+        matchedCount.textContent = '0';
+        timerEl.textContent = '⏱ 00:00';
+        messageEl.classList.remove('visible');
+        renderCards();
+    }
+
+    restartBtn.addEventListener('click', restartGame);
+    restartSub.addEventListener('click', restartGame);
+    renderCards();
+})();
+</script>
+</body>
+</html>
