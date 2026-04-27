@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ぷよぷよパズル</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: linear-gradient(135deg, #1a0533 0%, #0d1b5e 50%, #0a2744 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    font-family: 'Segoe UI', 'Hiragino Kaku Gothic ProN', sans-serif;
+    overflow: hidden;
+    touch-action: none;
+    user-select: none;
+  }
+
+  #title {
+    font-size: clamp(22px, 5vw, 36px);
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 0 0 20px #f0f, 0 0 40px #0ff, 3px 3px 0 #333;
+    letter-spacing: 2px;
+    margin: 8px 0 4px;
+    animation: titlePulse 2s ease-in-out infinite;
+  }
+  @keyframes titlePulse {
+    0%,100% { text-shadow: 0 0 20px #f0f, 0 0 40px #0ff, 3px 3px 0 #333; }
+    50% { text-shadow: 0 0 30px #ff0, 0 0 60px #f0f, 3px 3px 0 #333; }
+  }
+
+  #main-area {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+    max-width: 480px;
+    padding: 0 6px;
+  }
+
+  /* 左パネル */
+  #left-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 80px;
+  }
+
+  .panel-box {
+    background: rgba(255,255,255,0.1);
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 12px;
+    padding: 6px 8px;
+    text-align: center;
+    backdrop-filter: blur(4px);
+  }
+  .panel-label {
+    font-size: 11px;
+    color: #adf;
+    font-weight: bold;
+    letter-spacing: 1px;
+  }
+  .panel-value {
+    font-size: 22px;
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 0 0 10px #0ff;
+    line-height: 1.2;
+  }
+  .panel-sub {
+    font-size: 11px;
+    color: #ff9;
+  }
+
+  /* ネクストぷよ */
+  #next-field {
+    display: grid;
+    grid-template-columns: repeat(2, 28px);
+    grid-template-rows: repeat(2, 28px);
+    gap: 2px;
+    justify-content: center;
+    margin-top: 4px;
+  }
+  .next-cell {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    line-height: 1;
+    background: rgba(255,255,255,0.05);
+  }
+
+  /* メインフィールド */
+  #field-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  #field {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    grid-template-rows: repeat(12, 1fr);
+    border: 3px solid rgba(255,255,255,0.5);
+    border-radius: 8px;
+    overflow: hidden;
+    background: rgba(0,0,20,0.6);
+    box-shadow: 0 0 30px rgba(0,200,255,0.3), inset 0 0 20px rgba(0,0,0,0.5);
+    width: 100%;
+    aspect-ratio: 6/12;
+  }
+
+  .cell {
+    border: 1px solid rgba(255,255,255,0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(16px, 4vw, 28px);
+    line-height: 1;
+    transition: background 0.05s;
+    position: relative;
+  }
+  .cell.puyo {
+    animation: puyoAppear 0.1s ease-out;
+  }
+  @keyframes puyoAppear {
+    from { transform: scale(0.5); opacity: 0.5; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  .cell.flash {
+    animation: flashAnim 0.4s ease-in-out;
+  }
+  @keyframes flashAnim {
+    0%,100% { opacity: 1; transform: scale(1); }
+    25% { opacity: 0; transform: scale(1.3); }
+    50% { opacity: 1; transform: scale(0.9); }
+    75% { opacity: 0; transform: scale(1.2); }
+  }
+
+  /* 右パネル */
+  #right-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 80px;
+  }
+
+  /* 操作ボタン（タブレット用） */
+  #controls {
+    display: flex;
+    gap: 6px;
+    margin: 8px 0 4px;
+    justify-content: center;
+    width: 100%;
+    max-width: 480px;
+    padding: 0 6px;
+  }
+
+  .ctrl-btn {
+    flex: 1;
+    height: 56px;
+    border: none;
+    border-radius: 14px;
+    font-size: 22px;
+    cursor: pointer;
+    background: linear-gradient(145deg, rgba(255,255,255,0.25), rgba(255,255,255,0.1));
+    border: 2px solid rgba(255,255,255,0.3);
+    color: white;
+    transition: transform 0.1s, background 0.1s;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .ctrl-btn:active {
+    transform: scale(0.92);
+    background: linear-gradient(145deg, rgba(255,255,255,0.4), rgba(255,255,255,0.2));
+  }
+  .ctrl-btn.drop-btn {
+    background: linear-gradient(145deg, rgba(255,100,0,0.5), rgba(200,50,0,0.3));
+    border-color: rgba(255,150,50,0.5);
+  }
+  .ctrl-btn.rotate-btn {
+    background: linear-gradient(145deg, rgba(0,200,255,0.4), rgba(0,100,200,0.2));
+    border-color: rgba(0,200,255,0.5);
+  }
+
+  /* オーバーレイ */
+  #overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    flex-direction: column;
+    gap: 16px;
+  }
+  #overlay.show { display: flex; }
+
+  #overlay-box {
+    background: linear-gradient(135deg, #1a0050, #003366);
+    border: 3px solid rgba(255,255,255,0.5);
+    border-radius: 20px;
+    padding: 28px 36px;
+    text-align: center;
+    box-shadow: 0 0 40px rgba(0,200,255,0.4);
+    max-width: 320px;
+    width: 90%;
+  }
+  #overlay-title {
+    font-size: 32px;
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 0 0 20px #f0f;
+    margin-bottom: 12px;
+  }
+  #overlay-score {
+    font-size: 18px;
+    color: #adf;
+    margin-bottom: 6px;
+  }
+  #overlay-hi {
+    font-size: 16px;
+    color: #ff9;
+    margin-bottom: 20px;
+  }
+
+  #start-btn {
+    background: linear-gradient(135deg, #ff6600, #ff0080);
+    border: none;
+    border-radius: 16px;
+    color: white;
+    font-size: 22px;
+    font-weight: 900;
+    padding: 14px 40px;
+    cursor: pointer;
+    box-shadow: 0 0 20px rgba(255,100,0,0.5);
+    transition: transform 0.1s;
+    letter-spacing: 2px;
+  }
+  #start-btn:active { transform: scale(0.95); }
+
+  /* チェーンメッセージ */
+  #chain-msg {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 48px;
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 0 0 30px #ff0, 4px 4px 0 #f00;
+    pointer-events: none;
+    z-index: 200;
+    opacity: 0;
+    transition: none;
+    white-space: nowrap;
+  }
+  #chain-msg.show {
+    animation: chainAnim 1.2s ease-out forwards;
+  }
+  @keyframes chainAnim {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
+    20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+    50% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -60%) scale(0.8); }
+  }
+
+  /* レベルアップ演出 */
+  #levelup-msg {
+    position: fixed;
+    top: 30%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 40px;
+    font-weight: 900;
+    color: #ff0;
+    text-shadow: 0 0 30px #f80, 4px 4px 0 #a00;
+    pointer-events: none;
+    z-index: 200;
+    opacity: 0;
+    white-space: nowrap;
+  }
+  #levelup-msg.show {
+    animation: levelupAnim 2s ease-out forwards;
+  }
+  @keyframes levelupAnim {
+    0% { opacity: 0; transform: translateX(-50%) scale(0.3) rotate(-5deg); }
+    15% { opacity: 1; transform: translateX(-50%) scale(1.3) rotate(3deg); }
+    30% { transform: translateX(-50%) scale(1) rotate(-2deg); }
+    50% { opacity: 1; transform: translateX(-50%) scale(1.1) rotate(0deg); }
+    100% { opacity: 0; transform: translateX(-50%) scale(0.8) translateY(-30px); }
+  }
+
+  /* コンフェッティ */
+  .confetti-piece {
+    position: fixed;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    pointer-events: none;
+    z-index: 199;
+    animation: confettiFall linear forwards;
+  }
+  @keyframes confettiFall {
+    0% { opacity: 1; transform: translateY(0) rotate(0deg); }
+    100% { opacity: 0; transform: translateY(100vh) rotate(720deg); }
+  }
+
+  /* ハイスコア表示 */
+  .hi-label { color: #ff9; font-size: 11px; }
+  .hi-val { color: #ff9; font-size: 20px; font-weight: 900; text-shadow: 0 0 8px #ff0; }
+
+  /* レベルバー */
+  #level-bar-wrap {
+    background: rgba(0,0,0,0.3);
+    border-radius: 6px;
+    height: 8px;
+    margin-top: 4px;
+    overflow: hidden;
+  }
+  #level-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #0f0, #ff0, #f80);
+    border-radius: 6px;
+    transition: width 0.3s;
+    width: 0%;
+  }
+
+  /* キーボード操作ヒント */
+  #kb-hint {
+    font-size: 10px;
+    color: rgba(255,255,255,0.4);
+    text-align: center;
+    margin-bottom: 4px;
+  }
+</style>
+</head>
+<body>
+
+<div id="title">🌈 ぷよぷよ 🌈</div>
+
+<div id="main-area">
+  <!-- 左パネル -->
+  <div id="left-panel">
+    <div class="panel-box">
+      <div class="panel-label">スコア</div>
+      <div class="panel-value" id="score-val">0</div>
+    </div>
+    <div class="panel-box">
+      <div class="panel-label">レベル</div>
+      <div class="panel-value" id="level-val">1</div>
+      <div id="level-bar-wrap"><div id="level-bar"></div></div>
+    </div>
+    <div class="panel-box">
+      <div class="hi-label">ハイスコア</div>
+      <div class="hi-val" id="hi-val">0</div>
+    </div>
+  </div>
+
+  <!-- フィールド -->
+  <div id="field-wrapper">
+    <div id="field"></div>
+  </div>
+
+  <!-- 右パネル -->
+  <div id="right-panel">
+    <div class="panel-box">
+      <div class="panel-label">つぎ</div>
+      <div id="next-field">
+        <div class="next-cell" id="nc0"></div>
+        <div class="next-cell" id="nc1"></div>
+        <div class="next-cell" id="nc2"></div>
+        <div class="next-cell" id="nc3"></div>
+      </div>
+    </div>
+    <div class="panel-box">
+      <div class="panel-label">けした</div>
+      <div class="panel-value" id="cleared-val">0</div>
+      <div class="panel-sub" id="next-level-sub">あと?</div>
+    </div>
+  </div>
+</div>
+
+<!-- タッチ操作ボタン -->
+<div id="controls">
+  <button class="ctrl-btn" id="btn-left">⬅️</button>
+  <button class="ctrl-btn rotate-btn" id="btn-rotate">🔄</button>
+  <button class="ctrl-btn" id="btn-right">➡️</button>
+  <button class="ctrl-btn drop-btn" id="btn-drop">⬇️ はやい</button>
+  <button class="ctrl-btn drop-btn" id="btn-hard">💥 おちる</button>
+</div>
+
+<div id="kb-hint">PC: ← → ↑ ↓ スペース</div>
+
+<!-- チェーン・レベルアップメッセージ -->
+<div id="chain-msg"></div>
+<div id="levelup-msg"></div>
+
+<!-- スタート/ゲームオーバーオーバーレイ -->
+<div id="overlay" class="show">
+  <div id="overlay-box">
+    <div id="overlay-title">🌈 ぷよぷよ 🌈</div>
+    <div id="overlay-score" id="overlay-score-text"></div>
+    <div id="overlay-hi"></div>
+    <button id="start-btn">はじめる！</button>
+  </div>
+</div>
+
+<script>
+// =============================================
+// 定数・設定
+// =============================================
+const COLS = 6;
+const ROWS = 12;
+
+const PUYO_EMOJI = ['❤️','💛','💚','💙','💜'];
+
+const LEVELS = [
+  { colors: 2, speed: 1000,  nextAt: 10,  label: 'Lv1' },
+  { colors: 2, speed: 800,   nextAt: 10,  label: 'Lv2' },
+  { colors: 3, speed: 600,   nextAt: 20,  label: 'Lv3' },
+  { colors: 3, speed: 450,   nextAt: 30,  label: 'Lv4' },
+  { colors: 4, speed: 350,   nextAt: 40,  label: 'Lv5' },
+  { colors: 4, speed: 250,   nextAt: 50,  label: 'Lv6' },
+  { colors: 5, speed: 180,   nextAt: Infinity, label: 'Lv7' },
+];
+
+const CHAIN_MESSAGES = [
+  '', 'いいね！', 'すごい！', 'すごすぎる！', 'かみわざ！', 'むてき！！', 'でんせつ！！！'
+];
+
+// =============================================
+// ゲーム状態
+// =============================================
+let board = [];       // [row][col] = null | colorIndex
+let currentPuyo = null; // { cells: [{r,c,color}, {r,c,color}] }
+let nextPuyo = null;
+let score = 0;
+let hiScore = parseInt(localStorage.getItem('puyo_hi') || '0');
+let level = 0;       // index into LEVELS
+let clearedCount = 0;
+let levelClearedCount = 0; // このレベルで消した数
+let gameRunning = false;
+let dropTimer = null;
+let softDropping = false;
+
+// タッチ操作用
+let touchStartX = 0;
+let touchStartY = 0;
+
+// =============================================
+// DOM
+// =============================================
+const fieldEl = document.getElementById('field');
+const overlay = document.getElementById('overlay');
+const overlayTitle = document.getElementById('overlay-title');
+const overlayScore = document.getElementById('overlay-score');
+const overlayHi = document.getElementById('overlay-hi');
+const startBtn = document.getElementById('start-btn');
+const scoreVal = document.getElementById('score-val');
+const levelVal = document.getElementById('level-val');
+const hiVal = document.getElementById('hi-val');
+const clearedVal = document.getElementById('cleared-val');
+const nextLevelSub = document.getElementById('next-level-sub');
+const levelBar = document.getElementById('level-bar');
+const chainMsg = document.getElementById('chain-msg');
+const levelupMsg = document.getElementById('levelup-msg');
+
+// セル要素配列 [row][col]
+let cells = [];
+
+function initField() {
+  fieldEl.innerHTML = '';
+  cells = [];
+  board = [];
+  for (let r = 0; r < ROWS; r++) {
+    cells[r] = [];
+    board[r] = [];
+    for (let c = 0; c < COLS; c++) {
+      const div = document.createElement('div');
+      div.className = 'cell';
+      fieldEl.appendChild(div);
+      cells[r][c] = div;
+      board[r][c] = null;
+    }
+  }
+}
+
+function renderBoard() {
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const v = board[r][c];
+      const el = cells[r][c];
+      if (v !== null) {
+        el.textContent = PUYO_EMOJI[v];
+        el.classList.add('puyo');
+      } else {
+        el.textContent = '';
+        el.classList.remove('puyo');
+      }
+    }
+  }
+  // 落下中のぷよを描画（上書き）
+  if (currentPuyo) {
+    for (const p of currentPuyo.cells) {
+      if (p.r >= 0 && p.r < ROWS) {
+        cells[p.r][p.c].textContent = PUYO_EMOJI[p.color];
+        cells[p.r][p.c].classList.add('puyo');
+      }
+    }
+  }
+}
+
+function renderNext() {
+  const nc = document.querySelectorAll('.next-cell');
+  nc.forEach(el => el.textContent = '');
+  if (!nextPuyo) return;
+  // nextPuyo は [{color},{color}] の2つ
+  // 表示: 上段中央2マスに表示
+  // nc0=左上, nc1=右上, nc2=左下, nc3=右下
+  // 縦並び: nc1=上, nc3=下
+  document.getElementById('nc1').textContent = PUYO_EMOJI[nextPuyo[0]];
+  document.getElementById('nc3').textContent = PUYO_EMOJI[nextPuyo[1]];
+}
+
+function updateUI() {
+  scoreVal.textContent = score;
+  levelVal.textContent = level + 1;
+  hiVal.textContent = hiScore;
+  clearedVal.textContent = clearedCount;
+
+  const lv = LEVELS[level];
+  if (lv.nextAt === Infinity) {
+    nextLevelSub.textContent = 'さいこう！';
+    levelBar.style.width = '100%';
+  } else {
+    const remain = Math.max(0, lv.nextAt - levelClearedCount);
+    nextLevelSub.textContent = `あと${remain}`;
+    const pct = Math.min(100, (levelClearedCount / lv.nextAt) * 100);
+    levelBar.style.width = pct + '%';
+  }
+}
+
+// =============================================
+// ぷよ生成
+// =============================================
+function randColor() {
+  const numColors = LEVELS[level].colors;
+  return Math.floor(Math.random() * numColors);
+}
+
+function newPuyoPair() {
+  return [randColor(), randColor()];
+}
+
+// currentPuyo: cells = [{r,c,color}×2]
+// 配置: 上=cells[0], 下=cells[1] (縦配置でスポーン)
+function spawnPuyo() {
+  const colors = nextPuyo || newPuyoPair();
+  nextPuyo = newPuyoPair();
+  renderNext();
+
+  // スポーン位置: col=2,3 の上部
+  // 縦配置: [0]=上 r=-1 c=2, [1]=下 r=0 c=2
+  currentPuyo = {
+    cells: [
+      { r: -1, c: 2, color: colors[0] },
+      { r:  0, c: 2, color: colors[1] },
+    ],
+    // 回転状態: 0=縦(上下), 1=横(左右,上が右), 2=縦(逆), 3=横(逆)
+    rot: 0,
+  };
+
+  // ゲームオーバーチェック
+  if (!canPlace(currentPuyo.cells)) {
+    gameOver();
+    return;
+  }
+  startDrop();
+}
+
+function canPlace(cells_arr) {
+  for (const p of cells_arr) {
+    if (p.c < 0 || p.c >= COLS) return false;
+    if (p.r >= ROWS) return false;
+    if (p.r >= 0 && board[p.r][p.c] !== null) return false;
+  }
+  return true;
+}
+
+// =============================================
+// 操作
+// =============================================
+function moveLeft() {
+  if (!currentPuyo || !gameRunning) return;
+  const moved = currentPuyo.cells.map(p => ({...p, c: p.c - 1}));
+  if (canPlace(moved)) {
+    currentPuyo.cells = moved;
+    renderBoard();
+  }
+}
+
+function moveRight() {
+  if (!currentPuyo || !gameRunning) return;
+  const moved = currentPuyo.cells.map(p => ({...p, c: p.c + 1}));
+  if (canPlace(moved)) {
+    currentPuyo.cells = moved;
+    renderBoard();
+  }
+}
+
+function rotate() {
+  if (!currentPuyo || !gameRunning) return;
+  // pivot = cells[1] (下or右)
+  const pivot = currentPuyo.cells[1];
+  const other = currentPuyo.cells[0];
+  const dr = other.r - pivot.r;
+  const dc = other.c - pivot.c;
+  // 時計回り: (dr,dc) -> (dc, -dr)
+  const newDr = dc;
+  const newDc = -dr;
+  let newCells = [
+    { r: pivot.r + newDr, c: pivot.c + newDc, color: other.color },
+    { ...pivot },
+  ];
+  // 壁補正
+  if (!canPlace(newCells)) {
+    // 左壁補正
+    const minC = Math.min(...newCells.map(p=>p.c));
+    if (minC < 0) {
+      newCells = newCells.map(p => ({...p, c: p.c - minC}));
+    }
+    // 右壁補正
+    const maxC = Math.max(...newCells.map(p=>p.c));
+    if (maxC >= COLS) {
+      newCells = newCells.map(p => ({...p, c: p.c - (maxC - COLS + 1)}));
+    }
+    // 下補正
+    const maxR = Math.max(...newCells.map(p=>p.r));
+    if (maxR >= ROWS) {
+      newCells = newCells.map(p => ({...p, r: p.r - (maxR - ROWS + 1)}));
+    }
+  }
+  if (canPlace(newCells)) {
+    currentPuyo.cells = newCells;
+    renderBoard();
+  }
+}
+
+function softDrop() {
+  if (!currentPuyo || !gameRunning) return;
+  const moved = currentPuyo.cells.map(p => ({...p, r: p.r + 1}));
+  if (canPlace(moved)) {
+    currentPuyo.cells = moved;
+    renderBoard();
+    return true;
+  } else {
+    landPuyo();
+    return false;
+  }
+}
+
+function hardDrop() {
+  if (!currentPuyo || !gameRunning) return;
+  stopDrop();
+  while (true) {
+    const moved = currentPuyo.cells.map(p => ({...p, r: p.r + 1}));
+    if (canPlace(moved)) {
+      currentPuyo.cells = moved;
+    } else {
+      break;
+    }
+  }
+  renderBoard();
+  landPuyo();
+}
+
+// =============================================
+// 落下タイマー
+// =============================================
+function startDrop() {
+  stopDrop();
+  const spd = LEVELS[level].speed;
+  dropTimer = setInterval(() => {
+    if (!softDrop()) {
+      // landPuyo内で次のspawnが呼ばれる
+    }
+  }, spd);
+}
+
+function stopDrop() {
+  if (dropTimer) {
+    clearInterval(dropTimer);
+    dropTimer = null;
+  }
+}
+
+function setSoftDropping(on) {
+  if (softDropping === on) return;
+  softDropping = on;
+  stopDrop();
+  if (on) {
+    const spd = Math.max(50, LEVELS[level].speed / 5);
+    dropTimer = setInterval(() => {
+      if (!softDrop()) {}
+    }, spd);
+  } else {
+    startDrop();
+  }
+}
+
+// =============================================
+// 着地・消去・連鎖
+// =============================================
+function landPuyo() {
+  stopDrop();
+  if (!currentPuyo) return;
+
+  // ボードに固定
+  for (const p of currentPuyo.cells) {
+    if (p.r >= 0 && p.r < ROWS) {
+      board[p.r][p.c] = p.color;
+    }
+  }
+  currentPuyo = null;
+  renderBoard();
+
+  // 重力（落下中に穴がある場合）
+  applyGravity();
+
+  // 消去チェック（連鎖）
+  processChain(0);
+}
+
+function applyGravity() {
+  for (let c = 0; c < COLS; c++) {
+    let writeR = ROWS - 1;
+    for (let r = ROWS - 1; r >= 0; r--) {
+      if (board[r][c] !== null) {
+        board[writeR][c] = board[r][c];
+        if (writeR !== r) board[r][c] = null;
+        writeR--;
+      }
+    }
+    while (writeR >= 0) {
+      board[writeR][c] = null;
+      writeR--;
+    }
+  }
+}
+
+function findGroups() {
+  const visited = Array.from({length: ROWS}, () => Array(COLS).fill(false));
+  const groups = [];
+  const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (board[r][c] === null || visited[r][c]) continue;
+      const color = board[r][c];
+      const group = [];
+      const stack = [[r,c]];
+      visited[r][c] = true;
+      while (stack.length) {
+        const [cr, cc] = stack.pop();
+        group.push([cr, cc]);
+        for (const [dr, dc] of dirs) {
+          const nr = cr+dr, nc = cc+dc;
+          if (nr>=0&&nr<ROWS&&nc>=0&&nc<COLS&&!visited[nr][nc]&&board[nr][nc]===color) {
+            visited[nr][nc] = true;
+            stack.push([nr,nc]);
+          }
+        }
+      }
+      if (group.length >= 4) groups.push(group);
+    }
+  }
+  return groups;
+}
+
+function processChain(chainCount) {
+  const groups = findGroups();
+  if (groups.length === 0) {
+    // チェーン終了 → 次のぷよ
+    setTimeout(() => {
+      if (gameRunning) spawnPuyo();
+    }, 100);
+    return;
+  }
+
+  // フラッシュ演出
+  const toRemove = [];
+  for (const grp of groups) {
+    for (const [r,c] of grp) {
+      toRemove.push([r,c]);
+      cells[r][c].classList.add('flash');
+    }
+  }
+
+  setTimeout(() => {
+    // 削除
+    let removedCount = 0;
+    for (const [r,c] of toRemove) {
+      board[r][c] = null;
+      cells[r][c].classList.remove('flash');
+      removedCount++;
+    }
+
+    // スコア計算
+    const chainBonus = chainCount + 1;
+    const pts = removedCount * 10 * chainBonus * chainBonus;
+    score += pts;
+    clearedCount += removedCount;
+    levelClearedCount += removedCount;
+
+    // チェーンメッセージ
+    if (chainCount >= 1) {
+      showChainMsg(chainCount + 1);
+    }
+
+    // レベルアップチェック
+    checkLevelUp();
+
+    updateUI();
+    if (score > hiScore) {
+      hiScore = score;
+      localStorage.setItem('puyo_hi', hiScore);
+    }
+
+    applyGravity();
+    renderBoard();
+
+    // 次の連鎖チェック
+    setTimeout(() => processChain(chainCount + 1), 200);
+  }, 450);
+}
+
+function checkLevelUp() {
+  const lv = LEVELS[level];
+  if (lv.nextAt !== Infinity && levelClearedCount >= lv.nextAt && level < LEVELS.length - 1) {
+    level++;
+    levelClearedCount = 0;
+    showLevelUp();
+    // タイマー更新はspawnPuyo→startDropで行われる
+  }
+}
+
+// =============================================
+// 演出
+// =============================================
+function showChainMsg(n) {
+  const msg = CHAIN_MESSAGES[Math.min(n, CHAIN_MESSAGES.length-1)] || `${n}れんさ！`;
+  chainMsg.textContent = `${n}れんさ！ ${msg}`;
+  chainMsg.classList.remove('show');
+  void chainMsg.offsetWidth;
+  chainMsg.classList.add('show');
+  setTimeout(() => chainMsg.classList.remove('show'), 1300);
+}
+
+function showLevelUp() {
+  levelupMsg.textContent = `🎉 レベル${level+1} に なった！ 🎉`;
+  levelupMsg.classList.remove('show');
+  void levelupMsg.offsetWidth;
+  levelupMsg.classList.add('show');
+  setTimeout(() => levelupMsg.classList.remove('show'), 2200);
+  launchConfetti();
+}
+
+function launchConfetti() {
+  const colors = ['#ff0','#f0f','#0ff','#0f0','#f80','#fff'];
+  for (let i = 0; i < 60; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'confetti-piece';
+      el.style.left = Math.random() * 100 + 'vw';
+      el.style.top = '-10px';
+      el.style.background = colors[Math.floor(Math.random()*colors.length)];
+      el.style.width = (6 + Math.random()*8) + 'px';
+      el.style.height = (6 + Math.random()*8) + 'px';
+      el.style.animationDuration = (1.5 + Math.random()*2) + 's';
+      el.style.animationDelay = '0s';
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 3500);
+    }, i * 30);
+  }
+}
+
+// =============================================
+// ゲーム開始・終了
+// =============================================
+function startGame() {
+  initField();
+  score = 0;
+  clearedCount = 0;
+  levelClearedCount = 0;
+  level = 0;
+  softDropping = false;
+  nextPuyo = newPuyoPair();
+  gameRunning = true;
+  overlay.classList.remove('show');
+  updateUI();
+  spawnPuyo();
+}
+
+function gameOver() {
+  gameRunning = false;
+  stopDrop();
+  currentPuyo = null;
+
+  if (score > hiScore) {
+    hiScore = score;
+    localStorage.setItem('puyo_hi', hiScore);
+  }
+
+  overlayTitle.textContent = '💀 ゲームオーバー 💀';
+  overlayScore.textContent = `スコア: ${score}`;
+  overlayHi.textContent = `ハイスコア: ${hiScore}`;
+  startBtn.textContent = 'もういちど！';
+  overlay.classList.add('show');
+}
+
+// =============================================
+// キーボード操作
+// =============================================
+const keysDown = {};
+document.addEventListener('keydown', e => {
+  if (!gameRunning) return;
+  if (keysDown[e.code]) return;
+  keysDown[e.code] = true;
+
+  switch(e.code) {
+    case 'ArrowLeft':  moveLeft();  e.preventDefault(); break;
+    case 'ArrowRight': moveRight(); e.preventDefault(); break;
+    case 'ArrowUp':    rotate();    e.preventDefault(); break;
+    case 'ArrowDown':  setSoftDropping(true); e.preventDefault(); break;
+    case 'Space':      hardDrop();  e.preventDefault(); break;
+  }
+});
+document.addEventListener('keyup', e => {
+  delete keysDown[e.code];
+  if (e.code === 'ArrowDown') setSoftDropping(false);
+});
+
+// =============================================
+// タッチ操作（フィールド）
+// =============================================
+const fieldWrapper = document.getElementById('field-wrapper');
+
+fieldWrapper.addEventListener('touchstart', e => {
+  if (!gameRunning) return;
+  const t = e.touches[0];
+  touchStartX = t.clientX;
+  touchStartY = t.clientY;
+}, { passive: true });
+
+fieldWrapper.addEventListener('touchend', e => {
+  if (!gameRunning) return;
+  const t = e.changedTouches[0];
+  const dx = t.clientX - touchStartX;
+  const dy = t.clientY - touchStartY;
+  const adx = Math.abs(dx);
+  const ady = Math.abs(dy);
+  const threshold = 25;
+
+  if (adx < threshold && ady < threshold) {
+    // タップ → 回転
+    rotate();
+  } else if (adx > ady) {
+    if (dx < 0) moveLeft();
+    else moveRight();
+  } else {
+    if (dy < 0) rotate();
+    else {
+      // 下スワイプ → ハードドロップ
+      hardDrop();
+    }
+  }
+}, { passive: true });
+
+// =============================================
+// ボタン操作
+// =============================================
+document.getElementById('btn-left').addEventListener('click', () => { if(gameRunning) moveLeft(); });
+document.getElementById('btn-right').addEventListener('click', () => { if(gameRunning) moveRight(); });
+document.getElementById('btn-rotate').addEventListener('click', () => { if(gameRunning) rotate(); });
+document.getElementById('btn-drop').addEventListener('click', () => { if(gameRunning) softDrop(); });
+document.getElementById('btn-hard').addEventListener('click', () => { if(gameRunning) hardDrop(); });
+
+// 長押しで連続移動
+let repeatTimer = null;
+function startRepeat(fn) {
+  fn();
+  repeatTimer = setTimeout(() => {
+    repeatTimer = setInterval(fn, 100);
+  }, 250);
+}
+function stopRepeat() {
+  clearTimeout(repeatTimer);
+  clearInterval(repeatTimer);
+  repeatTimer = null;
+}
+
+['btn-left', 'btn-right'].forEach(id => {
+  const el = document.getElementById(id);
+  const fn = id === 'btn-left' ? moveLeft : moveRight;
+  el.addEventListener('touchstart', e => { e.preventDefault(); if(gameRunning) startRepeat(fn); }, {passive:false});
+  el.addEventListener('touchend', stopRepeat);
+  el.addEventListener('touchcancel', stopRepeat);
+});
+
+// ソフトドロップボタン長押し
+const dropBtn = document.getElementById('btn-drop');
+dropBtn.addEventListener('touchstart', e => { e.preventDefault(); if(gameRunning) setSoftDropping(true); }, {passive:false});
+dropBtn.addEventListener('touchend', () => setSoftDropping(false));
+dropBtn.addEventListener('touchcancel', () => setSoftDropping(false));
+
+// =============================================
+// スタートボタン
+// =============================================
+startBtn.addEventListener('click', startGame);
+
+// =============================================
+// 初期表示
+// =============================================
+hiVal.textContent = hiScore;
+overlayTitle.textContent = '🌈 ぷよぷよ 🌈';
+overlayScore.textContent = '';
+overlayHi.textContent = `ハイスコア: ${hiScore}`;
+startBtn.textContent = 'はじめる！';
+initField();
+</script>
+</body>
+</html>
