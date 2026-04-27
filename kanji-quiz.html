@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>漢字クイズ</title>
+<style>
+  :root {
+    --primary: #FF6B35;
+    --primary-light: #FF9A6C;
+    --secondary: #4ECDC4;
+    --accent: #FFE66D;
+    --bg: #FFF8F0;
+    --card: #FFFFFF;
+    --text: #2C3E50;
+    --text-light: #7F8C8D;
+    --success: #2ECC71;
+    --danger: #E74C3C;
+    --shadow: 0 4px 16px rgba(0,0,0,0.12);
+    --radius: 20px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Hiragino Kaku Gothic Pro', 'Meiryo', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* ========== 共通 ========== */
+  .screen { display: none; width: 100%; max-width: 600px; padding: 20px 16px 40px; animation: fadeIn .3s; }
+  .screen.active { display: flex; flex-direction: column; gap: 16px; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+  h1 { font-size: 2rem; font-weight: 900; color: var(--primary); text-align: center; }
+  h2 { font-size: 1.3rem; font-weight: 800; }
+
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+  }
+
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 18px;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 1.1rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform .15s, box-shadow .15s;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 4px 0 #c44b1f; }
+  .btn-primary:active { box-shadow: none; transform: translateY(4px); }
+  .btn-secondary { background: var(--secondary); color: #fff; box-shadow: 0 4px 0 #30a09a; }
+  .btn-secondary:active { box-shadow: none; transform: translateY(4px); }
+  .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
+  .btn-sm { padding: 12px; font-size: .95rem; }
+
+  /* ========== HOME ========== */
+  .hero { text-align: center; padding: 24px 0 8px; }
+  .hero-emoji { font-size: 4rem; display: block; }
+  .hero h1 { margin-top: 8px; }
+
+  .rank-badge {
+    text-align: center;
+    background: linear-gradient(135deg, var(--primary), #ff9800);
+    color: #fff;
+    border-radius: var(--radius);
+    padding: 16px;
+    font-size: 1.4rem;
+    font-weight: 900;
+    box-shadow: var(--shadow);
+  }
+  .rank-badge small { display: block; font-size: .8rem; font-weight: 500; opacity: .85; margin-top: 2px; }
+
+  .stat-row { display: flex; gap: 12px; }
+  .stat-box {
+    flex: 1;
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 14px;
+    text-align: center;
+    box-shadow: var(--shadow);
+  }
+  .stat-box .val { font-size: 1.6rem; font-weight: 900; color: var(--primary); }
+  .stat-box .lbl { font-size: .75rem; color: var(--text-light); margin-top: 2px; }
+
+  .level-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .level-btn {
+    background: var(--card);
+    border: none;
+    border-radius: 16px;
+    padding: 14px 8px;
+    text-align: center;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: transform .15s;
+    position: relative;
+  }
+  .level-btn:active { transform: scale(.95); }
+  .level-btn .lv-num { font-size: 1.3rem; font-weight: 900; color: var(--primary); }
+  .level-btn .lv-name { font-size: .7rem; color: var(--text-light); margin-top: 2px; }
+  .level-btn .lv-prog { font-size: .75rem; font-weight: 700; margin-top: 4px; }
+  .level-btn.unlocked { border: 2px solid var(--primary-light); }
+  .level-btn.cleared { border: 2px solid var(--success); background: #f0fff4; }
+  .level-btn.locked { opacity: .45; pointer-events: none; }
+  .level-btn .lock-icon { position: absolute; top: 8px; right: 8px; font-size: .9rem; }
+
+  .daily-card {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: transform .15s;
+  }
+  .daily-card:active { transform: scale(.97); }
+  .daily-card .dc-icon { font-size: 2.4rem; }
+  .daily-card .dc-title { font-size: 1rem; font-weight: 900; }
+  .daily-card .dc-sub { font-size: .8rem; opacity: .85; margin-top: 2px; }
+  .daily-card .dc-badge { margin-left: auto; background: rgba(255,255,255,.25); border-radius: 10px; padding: 4px 10px; font-size: .8rem; font-weight: 800; white-space: nowrap; }
+
+  /* ========== QUIZ ========== */
+  .quiz-header { display: flex; justify-content: space-between; align-items: center; }
+  .quiz-info { font-size: .9rem; color: var(--text-light); font-weight: 700; }
+
+  .timer-bar-wrap { background: #eee; border-radius: 8px; height: 10px; overflow: hidden; }
+  .timer-bar { height: 100%; background: var(--primary); border-radius: 8px; transition: width .1s linear, background .3s; }
+
+  .kanji-display {
+    background: linear-gradient(135deg, #FFF9C4, #FFF3E0);
+    border-radius: var(--radius);
+    text-align: center;
+    padding: 36px 20px;
+    box-shadow: var(--shadow);
+  }
+  .kanji-char { font-size: 5rem; font-weight: 900; color: var(--text); line-height: 1; }
+  .kanji-hint { font-size: .85rem; color: var(--text-light); margin-top: 8px; }
+
+  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .choice-btn {
+    background: var(--card);
+    border: 2.5px solid #E0E0E0;
+    border-radius: 16px;
+    padding: 18px 10px;
+    font-size: 1.1rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: border-color .15s, background .15s, transform .15s;
+    color: var(--text);
+  }
+  .choice-btn:active { transform: scale(.96); }
+  .choice-btn.correct { background: #d4f5e0; border-color: var(--success); color: var(--success); }
+  .choice-btn.wrong { background: #fde8e8; border-color: var(--danger); color: var(--danger); }
+  .choice-btn.disabled { pointer-events: none; }
+
+  .feedback {
+    text-align: center;
+    font-size: 1.2rem;
+    font-weight: 900;
+    min-height: 36px;
+    padding: 6px;
+  }
+  .feedback.ok { color: var(--success); }
+  .feedback.ng { color: var(--danger); }
+
+  .speed-bonus {
+    text-align: center;
+    font-size: .9rem;
+    font-weight: 700;
+    color: #FF9800;
+    min-height: 24px;
+  }
+
+  /* ========== RESULT ========== */
+  .result-hero { text-align: center; padding: 12px 0; }
+  .result-hero .big { font-size: 4rem; }
+  .result-hero h2 { font-size: 1.6rem; margin-top: 8px; }
+  .result-stars { font-size: 1.8rem; letter-spacing: 4px; margin-top: 4px; }
+
+  .score-row { display: flex; justify-content: space-around; padding: 12px 0; }
+  .score-item { text-align: center; }
+  .score-item .sv { font-size: 2rem; font-weight: 900; color: var(--primary); }
+  .score-item .sl { font-size: .8rem; color: var(--text-light); }
+
+  .exp-gain {
+    background: linear-gradient(90deg, var(--accent), #FFD700);
+    border-radius: 12px;
+    padding: 10px 16px;
+    text-align: center;
+    font-weight: 900;
+    color: var(--text);
+    font-size: 1rem;
+  }
+
+  .progress-section h3 { font-size: 1rem; font-weight: 800; margin-bottom: 8px; }
+  .prog-bar-wrap { background: #eee; border-radius: 8px; height: 16px; overflow: hidden; }
+  .prog-bar { height: 100%; background: linear-gradient(90deg, var(--secondary), var(--primary)); border-radius: 8px; transition: width 1s ease; }
+  .prog-label { display: flex; justify-content: space-between; font-size: .8rem; color: var(--text-light); margin-top: 4px; }
+
+  .level-up-banner {
+    background: linear-gradient(135deg, #FFD700, #FF8C00);
+    border-radius: var(--radius);
+    padding: 20px;
+    text-align: center;
+    color: #fff;
+    font-size: 1.3rem;
+    font-weight: 900;
+    box-shadow: 0 4px 20px rgba(255,140,0,.4);
+    animation: pulse 1s infinite alternate;
+  }
+  @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.02); } }
+
+  .daily-complete-badge {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: var(--radius);
+    padding: 16px;
+    text-align: center;
+    color: #fff;
+    font-weight: 900;
+  }
+
+  /* ========== Streak overlay ========== */
+  .toast {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-80px);
+    background: var(--text);
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 30px;
+    font-weight: 800;
+    font-size: 1rem;
+    z-index: 999;
+    transition: transform .35s;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ========== Scrollbar ========== */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--primary-light); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- ============ HOME ============ -->
+<div id="screen-home" class="screen active">
+  <div class="hero">
+    <span class="hero-emoji">📚</span>
+    <h1>漢字クイズ</h1>
+  </div>
+
+  <div id="rank-display" class="rank-badge">
+    <span id="rank-title">漢字見習い</span>
+    <small id="rank-points">⭐ 0 ポイント</small>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat-box">
+      <div class="val" id="stat-streak">0</div>
+      <div class="lbl">🔥 連続日数</div>
+    </div>
+    <div class="stat-box">
+      <div class="val" id="stat-total">0</div>
+      <div class="lbl">✅ 総正解数</div>
+    </div>
+    <div class="stat-box">
+      <div class="val" id="stat-lv">1</div>
+      <div class="lbl">🏆 現在Lv</div>
+    </div>
+  </div>
+
+  <!-- デイリーミッション -->
+  <div class="daily-card" onclick="startDaily()">
+    <div class="dc-icon">🌟</div>
+    <div>
+      <div class="dc-title">今日のミッション</div>
+      <div class="dc-sub" id="daily-sub">今日の5問に挑戦！</div>
+    </div>
+    <div class="dc-badge" id="daily-badge">START</div>
+  </div>
+
+  <!-- レベル選択 -->
+  <div class="card">
+    <h2 style="margin-bottom:14px;">📖 レベルを選んで練習</h2>
+    <div class="level-grid" id="level-grid"></div>
+  </div>
+</div>
+
+<!-- ============ QUIZ ============ -->
+<div id="screen-quiz" class="screen">
+  <div class="quiz-header">
+    <div class="quiz-info" id="quiz-label">Lv1 · 1/10</div>
+    <div class="quiz-info" id="quiz-score-info">⭐ 0</div>
+  </div>
+  <div class="timer-bar-wrap"><div class="timer-bar" id="timer-bar"></div></div>
+  <div class="kanji-display">
+    <div class="kanji-char" id="kanji-char">一</div>
+    <div class="kanji-hint" id="kanji-hint">この漢字の読みは？</div>
+  </div>
+  <div class="speed-bonus" id="speed-bonus"></div>
+  <div class="choices" id="choices"></div>
+  <div class="feedback" id="feedback"></div>
+  <button class="btn btn-outline btn-sm" onclick="goHome()" style="margin-top:4px;">🏠 ホームに戻る</button>
+</div>
+
+<!-- ============ RESULT ============ -->
+<div id="screen-result" class="screen">
+  <div class="result-hero card">
+    <div class="big" id="result-emoji">🎉</div>
+    <h2 id="result-title">クリア！</h2>
+    <div class="result-stars" id="result-stars">⭐⭐⭐</div>
+  </div>
+
+  <div class="card">
+    <div class="score-row">
+      <div class="score-item"><div class="sv" id="res-correct">0</div><div class="sl">正解</div></div>
+      <div class="score-item"><div class="sv" id="res-total-q">0</div><div class="sl">問題数</div></div>
+      <div class="score-item"><div class="sv" id="res-time">0s</div><div class="sl">平均タイム</div></div>
+    </div>
+  </div>
+
+  <div class="exp-gain" id="exp-gain">⭐ +0 ポイント獲得！</div>
+
+  <div id="level-up-area"></div>
+  <div id="daily-complete-area"></div>
+
+  <div class="card progress-section">
+    <h3 id="prog-section-title">Lv1 進捗</h3>
+    <div class="prog-bar-wrap"><div class="prog-bar" id="prog-bar" style="width:0%"></div></div>
+    <div class="prog-label"><span id="prog-left">0/10</span><span id="prog-right">クリアまで</span></div>
+  </div>
+
+  <button class="btn btn-primary" onclick="retryOrNext()" id="res-btn-main">もう一度</button>
+  <button class="btn btn-outline btn-sm" onclick="goHome()">🏠 ホームに戻る</button>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const LEVELS = [
+  {
+    name: "小1・数字と自然",
+    short: "数字/自然",
+    questions: [
+      { kanji:"一", reading:"いち", hint:"数字の１" },
+      { kanji:"二", reading:"に", hint:"数字の２" },
+      { kanji:"三", reading:"さん", hint:"数字の３" },
+      { kanji:"四", reading:"し・よん", hint:"数字の４" },
+      { kanji:"五", reading:"ご", hint:"数字の５" },
+      { kanji:"六", reading:"ろく", hint:"数字の６" },
+      { kanji:"七", reading:"しち・なな", hint:"数字の７" },
+      { kanji:"八", reading:"はち", hint:"数字の８" },
+      { kanji:"九", reading:"きゅう・く", hint:"数字の９" },
+      { kanji:"十", reading:"じゅう", hint:"数字の１０" },
+      { kanji:"日", reading:"にち・ひ", hint:"太陽・日づけ" },
+      { kanji:"月", reading:"つき・げつ", hint:"夜空に光るもの" },
+      { kanji:"火", reading:"ひ・か", hint:"燃えるもの" },
+      { kanji:"水", reading:"みず・すい", hint:"飲めるもの" },
+      { kanji:"木", reading:"き・もく", hint:"森に生えるもの" },
+    ]
+  },
+  {
+    name: "小1・体と場所",
+    short: "体/場所",
+    questions: [
+      { kanji:"山", reading:"やま・さん", hint:"高くそびえる" },
+      { kanji:"川", reading:"かわ・せん", hint:"水が流れる" },
+      { kanji:"田", reading:"た・でん", hint:"お米を作る場所" },
+      { kanji:"人", reading:"ひと・じん", hint:"わたしたち" },
+      { kanji:"口", reading:"くち・こう", hint:"話すところ" },
+      { kanji:"目", reading:"め・もく", hint:"見るところ" },
+      { kanji:"耳", reading:"みみ・じ", hint:"聞くところ" },
+      { kanji:"手", reading:"て・しゅ", hint:"つかむところ" },
+      { kanji:"足", reading:"あし・そく", hint:"歩くところ" },
+      { kanji:"大", reading:"おお・だい", hint:"大きいこと" },
+      { kanji:"小", reading:"ちい・しょう", hint:"小さいこと" },
+      { kanji:"中", reading:"なか・ちゅう", hint:"まんなか" },
+      { kanji:"上", reading:"うえ・じょう", hint:"高い方向" },
+      { kanji:"下", reading:"した・か", hint:"低い方向" },
+      { kanji:"右", reading:"みぎ・う", hint:"右側" },
+    ]
+  },
+  {
+    name: "小1・生活",
+    short: "生活",
+    questions: [
+      { kanji:"左", reading:"ひだり・さ", hint:"右の反対" },
+      { kanji:"生", reading:"せい・い・なま", hint:"生きること" },
+      { kanji:"年", reading:"ねん・とし", hint:"１２ヶ月のひと回り" },
+      { kanji:"入", reading:"はい・にゅう", hint:"中に入ること" },
+      { kanji:"出", reading:"で・しゅつ", hint:"外に出ること" },
+      { kanji:"立", reading:"た・りつ", hint:"起き上がること" },
+      { kanji:"休", reading:"やす・きゅう", hint:"ひと息つくこと" },
+      { kanji:"先", reading:"さき・せん", hint:"前の方" },
+      { kanji:"名", reading:"な・めい", hint:"呼ばれるもの" },
+      { kanji:"本", reading:"ほん", hint:"読むもの・もと" },
+      { kanji:"金", reading:"きん・かね", hint:"お金・貴金属" },
+      { kanji:"土", reading:"つち・ど", hint:"地面" },
+      { kanji:"林", reading:"はやし・りん", hint:"木が集まった場所" },
+      { kanji:"森", reading:"もり・しん", hint:"林より大きい" },
+      { kanji:"正", reading:"ただ・せい", hint:"まちがいがない" },
+    ]
+  },
+  {
+    name: "小2・季節と天気",
+    short: "季節/天気",
+    questions: [
+      { kanji:"花", reading:"はな・か", hint:"春に咲くもの" },
+      { kanji:"春", reading:"はる・しゅん", hint:"桜の季節" },
+      { kanji:"夏", reading:"なつ・か", hint:"海水浴の季節" },
+      { kanji:"秋", reading:"あき・しゅう", hint:"紅葉の季節" },
+      { kanji:"冬", reading:"ふゆ・とう", hint:"雪の季節" },
+      { kanji:"朝", reading:"あさ・ちょう", hint:"朝ごはんの時間" },
+      { kanji:"昼", reading:"ひる・ちゅう", hint:"お昼ご飯の時間" },
+      { kanji:"夜", reading:"よる・や", hint:"星が見える時間" },
+      { kanji:"晴", reading:"はれ・せい", hint:"雲がない天気" },
+      { kanji:"雨", reading:"あめ・う", hint:"雲から落ちてくるもの" },
+      { kanji:"雪", reading:"ゆき・せつ", hint:"白くて冷たいもの" },
+      { kanji:"風", reading:"かぜ・ふう", hint:"吹くもの" },
+      { kanji:"空", reading:"そら・くう", hint:"上にある広いもの" },
+      { kanji:"海", reading:"うみ・かい", hint:"広い水の場所" },
+      { kanji:"岩", reading:"いわ・がん", hint:"大きな石" },
+    ]
+  },
+  {
+    name: "小2・家族と学校",
+    short: "家族/学校",
+    questions: [
+      { kanji:"家", reading:"いえ・か", hint:"住む場所" },
+      { kanji:"父", reading:"ちち・ふ", hint:"お父さん" },
+      { kanji:"母", reading:"はは・も", hint:"お母さん" },
+      { kanji:"兄", reading:"あに・けい", hint:"上のお兄さん" },
+      { kanji:"弟", reading:"おとうと・てい", hint:"下の男の子" },
+      { kanji:"姉", reading:"あね・し", hint:"上のお姉さん" },
+      { kanji:"妹", reading:"いもうと・まい", hint:"下の女の子" },
+      { kanji:"友", reading:"とも・ゆう", hint:"なかよし" },
+      { kanji:"学", reading:"まな・がく", hint:"勉強すること" },
+      { kanji:"校", reading:"こう", hint:"学校の「校」" },
+      { kanji:"先", reading:"さき・せん", hint:"前・先生の「先」" },
+      { kanji:"生", reading:"せい・い", hint:"先生の「生」" },
+      { kanji:"男", reading:"おとこ・だん", hint:"男の子" },
+      { kanji:"女", reading:"おんな・じょ", hint:"女の子" },
+      { kanji:"子", reading:"こ・し", hint:"子ども" },
+    ]
+  },
+  {
+    name: "小2・まとめ",
+    short: "まとめ",
+    questions: [
+      { kanji:"東", reading:"ひがし・とう", hint:"太陽が昇る方向" },
+      { kanji:"西", reading:"にし・さい", hint:"太陽が沈む方向" },
+      { kanji:"南", reading:"みなみ・なん", hint:"温かい方向" },
+      { kanji:"北", reading:"きた・ほく", hint:"寒い方向" },
+      { kanji:"外", reading:"そと・がい", hint:"中の反対" },
+      { kanji:"内", reading:"うち・ない", hint:"外の反対" },
+      { kanji:"前", reading:"まえ・ぜん", hint:"後ろの反対" },
+      { kanji:"後", reading:"あと・ご", hint:"前の反対" },
+      { kanji:"高", reading:"たか・こう", hint:"山は〇〇い" },
+      { kanji:"安", reading:"やす・あん", hint:"値段が低い" },
+      { kanji:"新", reading:"あたら・しん", hint:"古いの反対" },
+      { kanji:"古", reading:"ふる・こ", hint:"新しいの反対" },
+      { kanji:"長", reading:"なが・ちょう", hint:"短いの反対" },
+      { kanji:"強", reading:"つよ・きょう", hint:"弱いの反対" },
+      { kanji:"弱", reading:"よわ・じゃく", hint:"強いの反対" },
+    ]
+  }
+];
+
+const RANKS = [
+  { name: "漢字見習い", min: 0 },
+  { name: "漢字の卵", min: 50 },
+  { name: "漢字名人", min: 150 },
+  { name: "漢字博士", min: 350 },
+  { name: "漢字王", min: 700 },
+];
+
+const QUIZ_COUNT = 10;
+const DAILY_COUNT = 5;
+const TIMER_SEC = 15;
+
+// ============================================================
+// STATE
+// ============================================================
+let state = {
+  points: 0,
+  totalCorrect: 0,
+  currentLevel: 1,         // 1-indexed
+  levelProgress: [0,0,0,0,0,0], // correct count per level (index 0=Lv1)
+  levelCleared: [false,false,false,false,false,false],
+  streak: 0,
+  lastPlayDate: "",
+  dailyDone: false,
+  dailyDate: "",
+};
+
+function loadState() {
+  const s = localStorage.getItem("kanjiQuizState");
+  if (s) state = Object.assign(state, JSON.parse(s));
+  // Daily reset check
+  const today = todayStr();
+  if (state.dailyDate !== today) {
+    state.dailyDone = false;
+    state.dailyDate = today;
+    saveState();
+  }
+}
+
+function saveState() {
+  localStorage.setItem("kanjiQuizState", JSON.stringify(state));
+}
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+}
+
+// ============================================================
+// QUIZ ENGINE
+// ============================================================
+let quizMode = "level"; // "level" | "daily"
+let quizLevelIdx = 0;   // 0-indexed
+let quizQueue = [];
+let quizIdx = 0;
+let quizCorrect = 0;
+let quizPoints = 0;
+let timerInterval = null;
+let timerLeft = TIMER_SEC;
+let quizStartTime = 0;
+let totalTime = 0;
+let questionCount = 0;
+
+function startLevelQuiz(levelIdx) {
+  quizMode = "level";
+  quizLevelIdx = levelIdx;
+  const pool = LEVELS[levelIdx].questions;
+  quizQueue = shuffle(pool).slice(0, QUIZ_COUNT);
+  beginQuiz();
+}
+
+function startDaily() {
+  const today = todayStr();
+  if (state.dailyDone) { showToast("今日はもうクリア済み！🎉"); return; }
+  quizMode = "daily";
+  // Mix from all unlocked levels
+  const maxLv = state.currentLevel;
+  let pool = [];
+  for (let i = 0; i < maxLv; i++) pool = pool.concat(LEVELS[i].questions);
+  quizQueue = shuffle(pool).slice(0, DAILY_COUNT);
+  beginQuiz();
+}
+
+function beginQuiz() {
+  quizIdx = 0;
+  quizCorrect = 0;
+  quizPoints = 0;
+  totalTime = 0;
+  questionCount = 0;
+  showScreen("quiz");
+  showQuestion();
+}
+
+function showQuestion() {
+  const q = quizQueue[quizIdx];
+  const total = quizQueue.length;
+  const lvLabel = quizMode === "daily" ? "デイリー" : `Lv${quizLevelIdx+1}`;
+  document.getElementById("quiz-label").textContent = `${lvLabel} · ${quizIdx+1}/${total}`;
+  document.getElementById("quiz-score-info").textContent = `⭐ ${quizPoints}`;
+  document.getElementById("kanji-char").textContent = q.kanji;
+  document.getElementById("kanji-hint").textContent = q.hint;
+  document.getElementById("feedback").textContent = "";
+  document.getElementById("feedback").className = "feedback";
+  document.getElementById("speed-bonus").textContent = "";
+
+  // Build choices
+  const allReadings = getAllReadings().filter(r => r !== q.reading);
+  const wrong = shuffle(allReadings).slice(0, 3);
+  const choices = shuffle([q.reading, ...wrong]);
+
+  const choicesEl = document.getElementById("choices");
+  choicesEl.innerHTML = "";
+  choices.forEach(c => {
+    const btn = document.createElement("button");
+    btn.className = "choice-btn";
+    btn.textContent = c;
+    btn.onclick = () => answer(c, q.reading, btn);
+    choicesEl.appendChild(btn);
+  });
+
+  // Timer
+  startTimer();
+  quizStartTime = Date.now();
+}
+
+function getAllReadings() {
+  const all = [];
+  LEVELS.forEach(lv => lv.questions.forEach(q => all.push(q.reading)));
+  return [...new Set(all)];
+}
+
+function startTimer() {
+  clearInterval(timerInterval);
+  timerLeft = TIMER_SEC;
+  updateTimerBar();
+  timerInterval = setInterval(() => {
+    timerLeft -= 0.1;
+    updateTimerBar();
+    if (timerLeft <= 0) {
+      clearInterval(timerInterval);
+      timeUp();
+    }
+  }, 100);
+}
+
+function updateTimerBar() {
+  const pct = Math.max(0, timerLeft / TIMER_SEC * 100);
+  const bar = document.getElementById("timer-bar");
+  bar.style.width = pct + "%";
+  bar.style.background = pct > 50 ? "var(--primary)" : pct > 25 ? "#FF9800" : "var(--danger)";
+}
+
+function timeUp() {
+  const q = quizQueue[quizIdx];
+  document.getElementById("feedback").textContent = `⏰ 時間切れ！正解は「${q.reading}」`;
+  document.getElementById("feedback").className = "feedback ng";
+  disableChoices();
+  // Mark wrong
+  totalTime += TIMER_SEC;
+  questionCount++;
+  setTimeout(nextQuestion, 1800);
+}
+
+function answer(chosen, correct, btn) {
+  clearInterval(timerInterval);
+  const elapsed = (Date.now() - quizStartTime) / 1000;
+  totalTime += elapsed;
+  questionCount++;
+
+  const allBtns = document.querySelectorAll(".choice-btn");
+  allBtns.forEach(b => {
+    b.classList.add("disabled");
+    if (b.textContent === correct) b.classList.add("correct");
+  });
+
+  if (chosen === correct) {
+    quizCorrect++;
+    btn.classList.add("correct");
+    // Speed bonus
+    let bonus = 0;
+    if (elapsed <= 3) bonus = 5;
+    else if (elapsed <= 6) bonus = 3;
+    else if (elapsed <= 10) bonus = 1;
+    const base = 10;
+    const earned = base + bonus;
+    quizPoints += earned;
+    document.getElementById("feedback").textContent = "⭕ せいかい！";
+    document.getElementById("feedback").className = "feedback ok";
+    if (bonus > 0) {
+      document.getElementById("speed-bonus").textContent = `スピードボーナス ⚡ +${bonus}`;
+    }
+  } else {
+    btn.classList.add("wrong");
+    document.getElementById("feedback").textContent = `❌ 正解は「${correct}」`;
+    document.getElementById("feedback").className = "feedback ng";
+  }
+
+  setTimeout(nextQuestion, 1500);
+}
+
+function disableChoices() {
+  document.querySelectorAll(".choice-btn").forEach(b => b.classList.add("disabled"));
+}
+
+function nextQuestion() {
+  quizIdx++;
+  if (quizIdx >= quizQueue.length) {
+    finishQuiz();
+  } else {
+    showQuestion();
+  }
+}
+
+function finishQuiz() {
+  // Update state
+  const prevPoints = state.points;
+  state.points += quizPoints;
+  state.totalCorrect += quizCorrect;
+
+  // Level progress (only in level mode)
+  if (quizMode === "level") {
+    state.levelProgress[quizLevelIdx] = Math.min(
+      QUIZ_COUNT,
+      (state.levelProgress[quizLevelIdx] || 0) + quizCorrect
+    );
+    if (state.levelProgress[quizLevelIdx] >= QUIZ_COUNT) {
+      state.levelCleared[quizLevelIdx] = true;
+      // Unlock next level
+      if (quizLevelIdx + 1 < LEVELS.length) {
+        state.currentLevel = Math.max(state.currentLevel, quizLevelIdx + 2);
+      }
+    }
+  }
+
+  // Daily
+  let dailyCompleted = false;
+  if (quizMode === "daily") {
+    const prevDate = state.lastPlayDate;
+    const today = todayStr();
+    const yesterday = yesterdayStr();
+    if (prevDate === yesterday) {
+      state.streak++;
+    } else if (prevDate !== today) {
+      state.streak = 1;
+    }
+    state.lastPlayDate = today;
+    state.dailyDone = true;
+    dailyCompleted = true;
+  }
+
+  saveState();
+  showResult(prevPoints, dailyCompleted);
+}
+
+function yesterdayStr() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+}
+
+// ============================================================
+// RESULT SCREEN
+// ============================================================
+function showResult(prevPoints, dailyCompleted) {
+  showScreen("result");
+
+  const total = quizQueue.length;
+  const pct = quizCorrect / total;
+  let emoji = pct >= 0.8 ? "🎉" : pct >= 0.5 ? "😊" : "😅";
+  let title = pct >= 0.8 ? "すばらしい！" : pct >= 0.5 ? "よくできました！" : "もう一度チャレンジ！";
+  const stars = pct >= 0.9 ? "⭐⭐⭐" : pct >= 0.7 ? "⭐⭐" : "⭐";
+
+  document.getElementById("result-emoji").textContent = emoji;
+  document.getElementById("result-title").textContent = title;
+  document.getElementById("result-stars").textContent = stars;
+  document.getElementById("res-correct").textContent = quizCorrect;
+  document.getElementById("res-total-q").textContent = total;
+  const avg = questionCount > 0 ? (totalTime / questionCount).toFixed(1) : "-";
+  document.getElementById("res-time").textContent = avg + "s";
+  document.getElementById("exp-gain").textContent = `⭐ +${quizPoints} ポイント獲得！`;
+
+  // Level up check
+  const prevRank = getRank(prevPoints);
+  const newRank = getRank(state.points);
+  const luArea = document.getElementById("level-up-area");
+  luArea.innerHTML = "";
+  if (newRank.name !== prevRank.name) {
+    const div = document.createElement("div");
+    div.className = "level-up-banner";
+    div.textContent = `🎊 ランクアップ！「${newRank.name}」になった！`;
+    luArea.appendChild(div);
+  }
+
+  // Level cleared
+  if (quizMode === "level" && state.levelCleared[quizLevelIdx]) {
+    const lvlUpEl = document.createElement("div");
+    lvlUpEl.className = "level-up-banner";
+    lvlUpEl.style.background = "linear-gradient(135deg,#2ECC71,#27ae60)";
+    lvlUpEl.textContent = `🏆 Lv${quizLevelIdx+1} クリア！`;
+    luArea.appendChild(lvlUpEl);
+  }
+
+  // Daily complete badge
+  const dcArea = document.getElementById("daily-complete-area");
+  dcArea.innerHTML = "";
+  if (dailyCompleted) {
+    const div = document.createElement("div");
+    div.className = "daily-complete-badge";
+    div.innerHTML = `🏅 今日の漢字クリア！<br>🔥 ${state.streak}日連続！`;
+    dcArea.appendChild(div);
+  }
+
+  // Progress bar
+  const progTitle = document.getElementById("prog-section-title");
+  const progBar = document.getElementById("prog-bar");
+  const progLeft = document.getElementById("prog-left");
+  const progRight = document.getElementById("prog-right");
+  const resBtnMain = document.getElementById("res-btn-main");
+
+  if (quizMode === "level") {
+    const prog = Math.min(state.levelProgress[quizLevelIdx], QUIZ_COUNT);
+    progTitle.textContent = `Lv${quizLevelIdx+1} 進捗`;
+    setTimeout(() => { progBar.style.width = (prog / QUIZ_COUNT * 100) + "%"; }, 100);
+    progLeft.textContent = `${prog}/${QUIZ_COUNT}`;
+    progRight.textContent = prog >= QUIZ_COUNT ? "クリア！🎉" : "クリアまで";
+    resBtnMain.textContent = "もう一度 Lv" + (quizLevelIdx+1);
+    resBtnMain.onclick = () => startLevelQuiz(quizLevelIdx);
+  } else {
+    progTitle.textContent = "今日のミッション";
+    setTimeout(() => { progBar.style.width = "100%"; }, 100);
+    progLeft.textContent = `${quizCorrect}/${total}`;
+    progRight.textContent = "完了！";
+    resBtnMain.textContent = "ホームへ";
+    resBtnMain.onclick = goHome;
+  }
+}
+
+function retryOrNext() { /* handled by resBtnMain.onclick */ }
+
+function getRank(pts) {
+  let r = RANKS[0];
+  for (const rank of RANKS) { if (pts >= rank.min) r = rank; }
+  return r;
+}
+
+// ============================================================
+// HOME RENDER
+// ============================================================
+function renderHome() {
+  // Rank
+  const rank = getRank(state.points);
+  document.getElementById("rank-title").textContent = rank.name;
+  document.getElementById("rank-points").textContent = `⭐ ${state.points} ポイント`;
+
+  // Stats
+  document.getElementById("stat-streak").textContent = state.streak;
+  document.getElementById("stat-total").textContent = state.totalCorrect;
+  document.getElementById("stat-lv").textContent = state.currentLevel;
+
+  // Daily badge
+  const today = todayStr();
+  const dailyBadge = document.getElementById("daily-badge");
+  const dailySub = document.getElementById("daily-sub");
+  if (state.dailyDone && state.dailyDate === today) {
+    dailyBadge.textContent = "✅ 完了";
+    dailySub.textContent = `🔥 ${state.streak}日連続！今日はクリア済み`;
+  } else {
+    dailyBadge.textContent = "START";
+    dailySub.textContent = "今日の5問に挑戦！";
+  }
+
+  // Level grid
+  const grid = document.getElementById("level-grid");
+  grid.innerHTML = "";
+  LEVELS.forEach((lv, i) => {
+    const btn = document.createElement("button");
+    const lvNum = i + 1;
+    const unlocked = lvNum <= state.currentLevel;
+    const cleared = state.levelCleared[i];
+    const prog = state.levelProgress[i] || 0;
+
+    btn.className = "level-btn " + (cleared ? "cleared" : unlocked ? "unlocked" : "locked");
+    btn.innerHTML = `
+      <div class="lv-num">Lv${lvNum}</div>
+      <div class="lv-name">${lv.short}</div>
+      <div class="lv-prog" style="color:${cleared ? "#2ECC71" : "var(--primary)"}">
+        ${cleared ? "✅ クリア" : unlocked ? `${Math.min(prog,QUIZ_COUNT)}/${QUIZ_COUNT}` : "🔒"}
+      </div>
+    `;
+    if (!unlocked) {
+      const lock = document.createElement("span");
+      lock.className = "lock-icon";
+      lock.textContent = "🔒";
+      btn.appendChild(lock);
+    }
+    btn.onclick = () => { if (unlocked) startLevelQuiz(i); };
+    grid.appendChild(btn);
+  });
+}
+
+// ============================================================
+// SCREEN CONTROL
+// ============================================================
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById("screen-" + id).classList.add("active");
+  if (id === "home") renderHome();
+  window.scrollTo(0, 0);
+}
+
+function goHome() {
+  clearInterval(timerInterval);
+  showScreen("home");
+}
+
+// ============================================================
+// UTILS
+// ============================================================
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2500);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+loadState();
+renderHome();
+</script>
+</body>
+</html>
