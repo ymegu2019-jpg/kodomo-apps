@@ -8,22 +8,32 @@
   body { margin: 0; font-family: "Hiragino Kaku Gothic ProN", sans-serif; background: linear-gradient(135deg, #1a1a3e 0%, #2d1b69 50%, #0a0a2e 100%); min-height: 100vh; padding: 20px; }
   h1 { text-align: center; color: #ffd700; font-size: 1.8em; text-shadow: 0 0 20px rgba(255,215,0,0.5); margin-bottom: 10px; }
   p.sub { text-align: center; color: #b8a0ff; margin-bottom: 30px; }
+  .section-title { text-align: center; color: #b8a0ff; font-size: 0.85em; margin: 20px 0 10px; letter-spacing: 2px; }
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; max-width: 700px; margin: 0 auto; }
   a.card { display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,215,0,0.3); border-radius: 16px; padding: 24px 12px; text-decoration: none; color: white; font-weight: bold; font-size: 1em; transition: all 0.2s; }
   a.card:hover { background: rgba(255,215,0,0.2); border-color: #ffd700; transform: translateY(-4px); }
+  a.card.game { border-color: rgba(255,100,100,0.4); }
+  a.card.game:hover { background: rgba(255,100,100,0.2); border-color: #ff6464; }
   .icon { font-size: 2.5em; margin-bottom: 8px; }
 </style>
 </head>
 <body>
 <h1>⭐ ゆうたろうのアプリ ⭐</h1>
 <p class="sub">すきなアプリをえらんでね！</p>
+
+<p class="section-title">📚 べんきょう</p>
 <div class="grid">
   <a class="card" href="hiragana-quiz.html"><div class="icon">あ</div>ひらがな</a>
   <a class="card" href="katakana-quiz.html"><div class="icon">ア</div>カタカナ</a>
   <a class="card" href="kanji-quiz.html"><div class="icon">漢</div>かんじ</a>
   <a class="card" href="math-game.html"><div class="icon">➕</div>たし算・ひき算</a>
   <a class="card" href="kuku_app.html"><div class="icon">✖️</div>かけ算九九</a>
-  <a class="card" href="まほうのカードあわせ.html"><div class="icon">🧙</div>まほうのカードゲーム</a>
+</div>
+
+<p class="section-title">🎮 ゲーム</p>
+<div class="grid">
+  <a class="card game" href="まほうのカードあわせ.html"><div class="icon">🧙</div>まほうのカードゲーム</a>
+  <a class="card game" href="puyo-puyo.html"><div class="icon">🔴</div>ぷよぷよ</a>
 </div>
 </body>
 </html>
