@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ひらがなクイズ ✨</title>
+<style>
+  :root {
+    --primary: #ff6b9d;
+    --secondary: #a855f7;
+    --accent: #f59e0b;
+    --bg: #fdf4ff;
+    --card: #ffffff;
+    --text: #1e1b4b;
+    --text-soft: #6b7280;
+    --success: #10b981;
+    --danger: #ef4444;
+    --shadow: 0 4px 20px rgba(168,85,247,0.15);
+    --radius: 20px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Hiragino Maru Gothic ProN', 'Rounded Mplus 1c', sans-serif;
+    background: linear-gradient(135deg, #fdf4ff 0%, #ede9fe 100%);
+    min-height: 100vh;
+    color: var(--text);
+    overflow-x: hidden;
+  }
+
+  /* ===== SCREENS ===== */
+  .screen { display: none; }
+  .screen.active { display: flex; flex-direction: column; min-height: 100vh; }
+
+  /* ===== HEADER ===== */
+  .header {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+    padding: 20px 24px 16px;
+    text-align: center;
+    position: relative;
+  }
+  .header h1 { font-size: 1.8rem; font-weight: 900; letter-spacing: 2px; }
+  .header .subtitle { font-size: 0.85rem; opacity: 0.9; margin-top: 2px; }
+
+  /* ===== HOME SCREEN ===== */
+  .home-content {
+    padding: 20px 20px 40px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* Status Card */
+  .status-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .status-avatar {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2rem;
+    flex-shrink: 0;
+  }
+  .status-info { flex: 1; }
+  .status-rank { font-size: 0.75rem; color: var(--text-soft); font-weight: 600; }
+  .status-level { font-size: 1.6rem; font-weight: 900; color: var(--secondary); line-height: 1; }
+  .status-name { font-size: 0.9rem; font-weight: 700; color: var(--text); margin-top: 2px; }
+  .status-points { font-size: 0.8rem; color: var(--accent); font-weight: 700; margin-top: 4px; }
+
+  /* Level Progress */
+  .level-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+  }
+  .level-card-title { font-size: 0.8rem; color: var(--text-soft); font-weight: 700; margin-bottom: 12px; letter-spacing: 1px; }
+  .level-progress-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .level-badge {
+    background: linear-gradient(135deg, var(--secondary), var(--primary));
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 900;
+    padding: 4px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  .progress-bar-wrap {
+    flex: 1;
+    height: 12px;
+    background: #ede9fe;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    border-radius: 10px;
+    transition: width 0.6s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .progress-text { font-size: 0.75rem; font-weight: 700; color: var(--secondary); white-space: nowrap; }
+
+  /* Daily Mission */
+  .daily-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+  }
+  .daily-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 4px;
+    background: linear-gradient(90deg, #f59e0b, #ef4444, #a855f7);
+  }
+  .daily-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .daily-title { font-size: 0.95rem; font-weight: 900; color: var(--text); }
+  .streak-badge {
+    background: linear-gradient(135deg, #f59e0b, #ef4444);
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 900;
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
+  .daily-status { font-size: 0.85rem; color: var(--text-soft); }
+  .daily-dots {
+    display: flex; gap: 8px; margin-top: 12px;
+  }
+  .daily-dot {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 3px solid #ede9fe;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+    background: #f5f3ff;
+    transition: all 0.3s;
+  }
+  .daily-dot.done {
+    background: linear-gradient(135deg, var(--success), #059669);
+    border-color: var(--success);
+    color: white;
+  }
+  .mission-complete-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--success), #059669);
+    color: white;
+    font-size: 0.85rem;
+    font-weight: 900;
+    padding: 8px 16px;
+    border-radius: 20px;
+    margin-top: 10px;
+    animation: pulse 2s infinite;
+  }
+
+  /* Menu Buttons */
+  .menu-buttons { display: flex; flex-direction: column; gap: 12px; }
+  .btn-menu {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    font-size: 1.1rem;
+    font-weight: 900;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 4px 15px rgba(255,107,157,0.4);
+    transition: transform 0.15s, box-shadow 0.15s;
+    letter-spacing: 1px;
+  }
+  .btn-menu:active { transform: scale(0.97); box-shadow: 0 2px 8px rgba(255,107,157,0.3); }
+  .btn-menu.secondary {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    box-shadow: 0 4px 15px rgba(99,102,241,0.35);
+  }
+  .btn-menu .icon { font-size: 1.4rem; }
+  .btn-menu .label { flex: 1; text-align: left; }
+  .btn-menu .arrow { opacity: 0.7; }
+
+  /* ===== LEVEL SELECT ===== */
+  .level-select-content { padding: 20px; flex: 1; display: flex; flex-direction: column; gap: 12px; }
+  .back-btn {
+    background: none; border: none; cursor: pointer;
+    font-size: 1.5rem; color: white;
+    position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+    padding: 8px;
+  }
+  .level-item {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    box-shadow: var(--shadow);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: transform 0.15s;
+    border: 3px solid transparent;
+  }
+  .level-item:active { transform: scale(0.98); }
+  .level-item.current { border-color: var(--secondary); }
+  .level-item.locked { opacity: 0.5; cursor: not-allowed; }
+  .level-num {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem;
+    font-weight: 900;
+    flex-shrink: 0;
+  }
+  .level-item.locked .level-num {
+    background: #d1d5db;
+  }
+  .level-info { flex: 1; }
+  .level-info-name { font-size: 1rem; font-weight: 900; }
+  .level-info-chars { font-size: 0.8rem; color: var(--text-soft); margin-top: 2px; }
+  .level-info-bar { height: 6px; background: #ede9fe; border-radius: 4px; margin-top: 8px; overflow: hidden; }
+  .level-info-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary)); border-radius: 4px; }
+  .level-score { font-size: 0.8rem; font-weight: 700; color: var(--secondary); text-align: right; }
+  .lock-icon { font-size: 1.4rem; }
+
+  /* ===== QUIZ SCREEN ===== */
+  .quiz-content {
+    padding: 16px 20px 32px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .quiz-top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+  .quiz-info-chip {
+    background: white;
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--secondary);
+    box-shadow: 0 2px 8px rgba(168,85,247,0.15);
+  }
+  .quiz-timer {
+    background: white;
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 0.9rem;
+    font-weight: 900;
+    color: var(--primary);
+    box-shadow: 0 2px 8px rgba(255,107,157,0.2);
+    min-width: 60px;
+    text-align: center;
+  }
+  .quiz-timer.urgent { color: var(--danger); animation: blink 0.5s infinite; }
+
+  .question-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 28px 20px;
+    box-shadow: var(--shadow);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .question-label { font-size: 0.8rem; color: var(--text-soft); font-weight: 700; margin-bottom: 8px; }
+  .question-char {
+    font-size: 5rem;
+    font-weight: 900;
+    color: var(--secondary);
+    line-height: 1;
+    transition: transform 0.2s;
+  }
+  .question-char.big { font-size: 4rem; }
+
+  .choices-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .choice-btn {
+    background: var(--card);
+    border: 3px solid #ede9fe;
+    border-radius: 16px;
+    padding: 18px 12px;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    position: relative;
+    overflow: hidden;
+  }
+  .choice-btn:active { transform: scale(0.96); }
+  .choice-btn.correct {
+    background: linear-gradient(135deg, var(--success), #059669);
+    border-color: var(--success);
+    color: white;
+    transform: scale(1.04);
+  }
+  .choice-btn.wrong {
+    background: linear-gradient(135deg, var(--danger), #dc2626);
+    border-color: var(--danger);
+    color: white;
+  }
+  .choice-btn.disabled { cursor: not-allowed; }
+
+  .feedback-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: none;
+    z-index: 100;
+  }
+  .feedback-text {
+    font-size: 4rem;
+    font-weight: 900;
+    animation: feedbackPop 0.7s forwards;
+    opacity: 0;
+  }
+
+  /* Quiz bottom */
+  .quiz-score-row {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+  }
+  .score-chip {
+    background: white;
+    border-radius: 12px;
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .score-chip .val { font-size: 1.1rem; color: var(--secondary); }
+
+  /* ===== RESULT SCREEN ===== */
+  .result-content {
+    padding: 24px 20px 40px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+  .result-hero {
+    text-align: center;
+  }
+  .result-emoji { font-size: 5rem; animation: bounce 1s ease-in-out 0.3s; }
+  .result-title { font-size: 1.6rem; font-weight: 900; margin-top: 8px; }
+  .result-sub { font-size: 0.9rem; color: var(--text-soft); margin-top: 4px; }
+
+  .result-stats {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+  }
+  .stat-item { text-align: center; }
+  .stat-num { font-size: 2rem; font-weight: 900; color: var(--secondary); }
+  .stat-label { font-size: 0.75rem; color: var(--text-soft); font-weight: 600; }
+
+  .xp-gained {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    border-radius: 16px;
+    padding: 16px 24px;
+    text-align: center;
+    width: 100%;
+    border: 2px solid #f59e0b;
+  }
+  .xp-label { font-size: 0.8rem; font-weight: 700; color: #92400e; }
+  .xp-num { font-size: 2.5rem; font-weight: 900; color: #d97706; }
+
+  .result-btns { display: flex; flex-direction: column; gap: 12px; width: 100%; }
+  .btn-result {
+    border: none;
+    border-radius: var(--radius);
+    padding: 18px;
+    font-size: 1rem;
+    font-weight: 900;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    letter-spacing: 0.5px;
+  }
+  .btn-result:active { transform: scale(0.97); }
+  .btn-result.primary {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+    box-shadow: 0 4px 15px rgba(255,107,157,0.4);
+  }
+  .btn-result.ghost {
+    background: var(--card);
+    color: var(--secondary);
+    box-shadow: var(--shadow);
+  }
+
+  /* ===== LEVEL UP OVERLAY ===== */
+  #levelUpOverlay {
+    display: none;
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(10,0,30,0.85);
+    align-items: center; justify-content: center;
+    flex-direction: column;
+    text-align: center;
+  }
+  #levelUpOverlay.show { display: flex; }
+  .levelup-content {
+    animation: levelUpPop 0.5s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .levelup-stars { font-size: 3rem; }
+  .levelup-badge {
+    background: linear-gradient(135deg, #f59e0b, #ef4444);
+    color: white;
+    font-size: 1rem;
+    font-weight: 900;
+    padding: 6px 20px;
+    border-radius: 20px;
+    margin: 12px auto;
+    display: inline-block;
+  }
+  .levelup-num {
+    font-size: 6rem;
+    font-weight: 900;
+    color: #fbbf24;
+    line-height: 1;
+    text-shadow: 0 0 40px #f59e0b;
+  }
+  .levelup-text { color: white; font-size: 1.4rem; font-weight: 900; margin-top: 8px; }
+  .levelup-btn {
+    margin-top: 24px;
+    background: linear-gradient(135deg, #f59e0b, #ef4444);
+    color: white;
+    border: none;
+    border-radius: 16px;
+    padding: 16px 40px;
+    font-size: 1.1rem;
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  /* Confetti canvas */
+  #confettiCanvas {
+    position: fixed; inset: 0; pointer-events: none; z-index: 150;
+  }
+
+  /* ===== ANIMATIONS ===== */
+  @keyframes feedbackPop {
+    0%   { opacity: 0; transform: scale(0.3) rotate(-10deg); }
+    30%  { opacity: 1; transform: scale(1.2) rotate(5deg); }
+    60%  { transform: scale(0.95) rotate(-2deg); }
+    80%  { opacity: 1; transform: scale(1) rotate(0deg); }
+    100% { opacity: 0; transform: scale(1.1) rotate(0deg); }
+  }
+  @keyframes levelUpPop {
+    from { transform: scale(0) rotate(-20deg); opacity: 0; }
+    to   { transform: scale(1) rotate(0deg);  opacity: 1; }
+  }
+  @keyframes bounce {
+    0%,100% { transform: translateY(0); }
+    50%     { transform: translateY(-12px); }
+  }
+  @keyframes pulse {
+    0%,100% { transform: scale(1); }
+    50%     { transform: scale(1.04); }
+  }
+  @keyframes blink {
+    0%,100% { opacity: 1; }
+    50%     { opacity: 0.4; }
+  }
+  @keyframes starFloat {
+    0%   { transform: translateY(0) scale(1); opacity: 1; }
+    100% { transform: translateY(-80px) scale(1.5); opacity: 0; }
+  }
+  .star-float {
+    position: fixed;
+    font-size: 1.8rem;
+    pointer-events: none;
+    z-index: 300;
+    animation: starFloat 0.9s ease-out forwards;
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (min-width: 600px) {
+    .home-content, .quiz-content, .result-content, .level-select-content {
+      max-width: 500px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .screen { align-items: center; }
+    .header { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<!-- CONFETTI -->
+<canvas id="confettiCanvas"></canvas>
+
+<!-- LEVEL UP OVERLAY -->
+<div id="levelUpOverlay">
+  <div class="levelup-content">
+    <div class="levelup-stars">⭐✨🌟</div>
+    <div class="levelup-badge">LEVEL UP!!</div>
+    <div class="levelup-num" id="levelUpNum">2</div>
+    <div class="levelup-text" id="levelUpText">レベル2になった！</div>
+    <button class="levelup-btn" onclick="closeLevelUp()">つぎへ ▶</button>
+  </div>
+</div>
+
+<!-- FEEDBACK OVERLAY -->
+<div class="feedback-overlay" id="feedbackOverlay">
+  <div class="feedback-text" id="feedbackText"></div>
+</div>
+
+<!-- ===== HOME SCREEN ===== -->
+<div id="homeScreen" class="screen active">
+  <div class="header" style="position:relative;">
+    <h1>✨ ひらがなクイズ</h1>
+    <div class="subtitle">まほうのもじをおぼえよう</div>
+  </div>
+  <div class="home-content">
+
+    <!-- Status Card -->
+    <div class="status-card">
+      <div class="status-avatar" id="homeAvatar">🧙</div>
+      <div class="status-info">
+        <div class="status-rank" id="homeRankLabel">ランク</div>
+        <div class="status-level" id="homeLevelText">Lv.1</div>
+        <div class="status-name" id="homeRankName">みならい まほうつかい</div>
+        <div class="status-points" id="homePoints">⭐ 0 pt</div>
+      </div>
+    </div>
+
+    <!-- Level Progress -->
+    <div class="level-card">
+      <div class="level-card-title">📊 レベルしんちょく</div>
+      <div class="level-progress-row">
+        <div class="level-badge" id="progressLvBadge">Lv.1</div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="progressBarFill" style="width:0%"></div>
+        </div>
+        <div class="progress-text" id="progressText">0/10</div>
+      </div>
+      <div style="font-size:0.78rem;color:var(--text-soft);" id="progressSubText">10もん せいかいで レベルアップ！</div>
+    </div>
+
+    <!-- Daily Mission -->
+    <div class="daily-card">
+      <div class="daily-header">
+        <div class="daily-title">🌅 デイリーミッション</div>
+        <div class="streak-badge" id="streakBadge">🔥 0日</div>
+      </div>
+      <div class="daily-status" id="dailyStatusText">きょうの 5もん にチャレンジ！</div>
+      <div class="daily-dots" id="dailyDots"></div>
+      <div id="missionCompleteBadge" style="display:none">
+        <div class="mission-complete-badge">🏆 きょうのミッション かんりょう！</div>
+      </div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="menu-buttons">
+      <button class="btn-menu" onclick="showScreen('levelSelect')">
+        <span class="icon">🎮</span>
+        <span class="label">クイズをはじめる</span>
+        <span class="arrow">▶</span>
+      </button>
+      <button class="btn-menu secondary" onclick="startDailyQuiz()">
+        <span class="icon">🌅</span>
+        <span class="label">デイリーチャレンジ</span>
+        <span class="arrow">▶</span>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== LEVEL SELECT SCREEN ===== -->
+<div id="levelSelect" class="screen">
+  <div class="header" style="position:relative;">
+    <button class="back-btn" onclick="showScreen('homeScreen')">◀</button>
+    <h1>レベルせんたく</h1>
+  </div>
+  <div class="level-select-content" id="levelSelectList"></div>
+</div>
+
+<!-- ===== QUIZ SCREEN ===== -->
+<div id="quizScreen" class="screen">
+  <div class="header" style="position:relative;">
+    <button class="back-btn" onclick="confirmQuit()">◀</button>
+    <h1 id="quizHeaderTitle">クイズ</h1>
+    <div class="subtitle" id="quizHeaderSub">がんばれ！</div>
+  </div>
+  <div class="quiz-content">
+    <div class="quiz-top-bar">
+      <div class="quiz-info-chip" id="quizInfoChip">1 / 10</div>
+      <div class="quiz-info-chip" id="quizCorrectChip">✅ 0</div>
+      <div class="quiz-timer" id="quizTimer">10</div>
+    </div>
+    <div class="question-card">
+      <div class="question-label">このもじは なんとよむ？</div>
+      <div class="question-char" id="questionChar">あ</div>
+    </div>
+    <div class="choices-grid" id="choicesGrid"></div>
+    <div class="quiz-score-row">
+      <div class="score-chip">⭐ <span class="val" id="livePoints">0</span> pt</div>
+      <div class="score-chip">🔥 コンボ <span class="val" id="liveCombo">0</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== RESULT SCREEN ===== */
+<div id="resultScreen" class="screen">
+  <div class="header">
+    <h1>🎉 けっか</h1>
+  </div>
+  <div class="result-content">
+    <div class="result-hero">
+      <div class="result-emoji" id="resultEmoji">🎊</div>
+      <div class="result-title" id="resultTitle">すごい！</div>
+      <div class="result-sub" id="resultSub">ぜんもん せいかい！</div>
+    </div>
+    <div class="result-stats">
+      <div class="stat-item">
+        <div class="stat-num" id="statCorrect">0</div>
+        <div class="stat-label">せいかい</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num" id="statTotal">10</div>
+        <div class="stat-label">もんすう</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num" id="statMaxCombo">0</div>
+        <div class="stat-label">さいこうコンボ</div>
+      </div>
+    </div>
+    <div class="xp-gained">
+      <div class="xp-label">このかいで かくとく</div>
+      <div class="xp-num" id="xpGained">+0 ⭐</div>
+    </div>
+    <div class="result-btns">
+      <button class="btn-result primary" id="resultNextBtn" onclick="retryOrNext()">もう一かい</button>
+      <button class="btn-result ghost" onclick="showScreen('homeScreen')">ホームへかえる</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  DATA DEFINITIONS
+// ============================================================
+const LEVELS = [
+  {
+    id: 1,
+    name: 'さいしょのいっぽ',
+    chars: ['あ','い','う','え','お','か','き','く','け','こ','さ','し','す','せ','そ'],
+    romajiMap: {
+      'あ':'a','い':'i','う':'u','え':'e','お':'o',
+      'か':'ka','き':'ki','く':'ku','け':'ke','こ':'ko',
+      'さ':'sa','し':'shi','す':'su','せ':'se','そ':'so'
+    },
+    readingMap: {
+      'あ':'あ','い':'い','う':'う','え':'え','お':'お',
+      'か':'か','き':'き','く':'く','け':'け','こ':'こ',
+      'さ':'さ','し':'し','す':'す','せ':'せ','そ':'そ'
+    }
+  },
+  {
+    id: 2,
+    name: 'なかまたち',
+    chars: ['た','ち','つ','て','と','な','に','ぬ','ね','の','は','ひ','ふ','へ','ほ'],
+    romajiMap: {
+      'た':'ta','ち':'chi','つ':'tsu','て':'te','と':'to',
+      'な':'na','に':'ni','ぬ':'nu','ね':'ne','の':'no',
+      'は':'ha','ひ':'hi','ふ':'fu','へ':'he','ほ':'ho'
+    },
+    readingMap: {
+      'た':'た','ち':'ち','つ':'つ','て':'て','と':'と',
+      'な':'な','に':'に','ぬ':'ぬ','ね':'ね','の':'の',
+      'は':'は','ひ':'ひ','ふ':'ふ','へ':'へ','ほ':'ほ'
+    }
+  },
+  {
+    id: 3,
+    name: 'ぜんぶそろった',
+    chars: ['ま','み','む','め','も','や','ゆ','よ','ら','り','る','れ','ろ','わ','を','ん'],
+    romajiMap: {
+      'ま':'ma','み':'mi','む','め':'me','も':'mo',
+      'や':'ya','ゆ':'yu','よ':'yo',
+      'ら':'ra','り':'ri','る':'ru','れ':'re','ろ':'ro',
+      'わ':'wa','を':'wo','ん':'n'
+    },
+    readingMap: {
+      'ま':'ま','み':'み','む':'む','め':'め','も':'も',
+      'や':'や','ゆ':'ゆ','よ':'よ',
+      'ら':'ら','り':'り','る':'る','れ':'れ','ろ':'ろ',
+      'わ':'わ','を':'を','ん':'ん'
+    }
+  },
+  {
+    id: 4,
+    name: 'だくおんマスター',
+    chars: ['が','ぎ','ぐ','げ','ご','ざ','じ','ず','ぜ','ぞ','だ','ぢ','づ','で','ど','ば','び','ぶ','べ','ぼ'],
+    romajiMap: {
+      'が':'ga','ぎ':'gi','ぐ':'gu','げ':'ge','ご':'go',
+      'ざ':'za','じ':'ji','ず':'zu','ぜ':'ze','ぞ':'zo',
+      'だ':'da','ぢ':'di','づ':'du','で':'de','ど':'do',
+      'ば':'ba','び':'bi','ぶ':'bu','べ':'be','ぼ':'bo'
+    },
+    readingMap: {
+      'が':'が','ぎ':'ぎ','ぐ':'ぐ','げ':'げ','ご':'ご',
+      'ざ':'ざ','じ':'じ','ず':'ず','ぜ':'ぜ','ぞ':'ぞ',
+      'だ':'だ','ぢ':'ぢ','づ':'づ','で':'で','ど':'ど',
+      'ば':'ば','び':'び','ぶ':'ぶ','べ':'べ','ぼ':'ぼ'
+    }
+  },
+  {
+    id: 5,
+    name: 'まほうおう',
+    chars: ['ぱ','ぴ','ぷ','ぺ','ぽ','きゃ','きゅ','きょ','しゃ','しゅ','しょ','ちゃ','ちゅ','ちょ','にゃ','にゅ','にょ','ひゃ','ひゅ','ひょ','みゃ','みゅ','みょ','りゃ','りゅ','りょ'],
+    romajiMap: {
+      'ぱ':'pa','ぴ':'pi','ぷ':'pu','ぺ':'pe','ぽ':'po',
+      'きゃ':'kya','きゅ':'kyu','きょ':'kyo',
+      'しゃ':'sha','しゅ':'shu','しょ':'sho',
+      'ちゃ':'cha','ちゅ':'chu','ちょ':'cho',
+      'にゃ':'nya','にゅ':'nyu','にょ':'nyo',
+      'ひゃ':'hya','ひゅ':'hyu','ひょ':'hyo',
+      'みゃ':'mya','みゅ':'myu','みょ':'myo',
+      'りゃ':'rya','りゅ':'ryu','りょ':'ryo'
+    },
+    readingMap: {
+      'ぱ':'ぱ','ぴ':'ぴ','ぷ':'ぷ','ぺ':'ぺ','ぽ':'ぽ',
+      'きゃ':'きゃ','きゅ':'きゅ','きょ':'きょ',
+      'しゃ':'しゃ','しゅ':'しゅ','しょ':'しょ',
+      'ちゃ':'ちゃ','ちゅ':'ちゅ','ちょ':'ちょ',
+      'にゃ':'にゃ','にゅ':'にゅ','にょ':'にょ',
+      'ひゃ':'ひゃ','ひゅ':'ひゅ','ひょ':'ひょ',
+      'みゃ':'みゃ','みゅ':'みゅ','みょ':'みょ',
+      'りゃ':'りゃ','りゅ':'りゅ','りょ':'りょ'
+    }
+  }
+];
+
+// All chars pool for wrong choices
+const ALL_CHARS = [
+  ...LEVELS[0].chars, ...LEVELS[1].chars, ...LEVELS[2].chars,
+  ...LEVELS[3].chars, ...LEVELS[4].chars
+];
+
+const RANKS = [
+  { minPt: 0,    name: 'みならい まほうつかい', icon: '🧙', label: 'ランク 1' },
+  { minPt: 100,  name: 'まほうつかい',           icon: '🧙‍♀️', label: 'ランク 2' },
+  { minPt: 300,  name: 'だいまほうつかい',        icon: '🔮', label: 'ランク 3' },
+  { minPt: 700,  name: 'まほうおう',              icon: '👑', label: 'ランク 4' }
+];
+
+// ============================================================
+//  STATE
+// ============================================================
+let state = {
+  currentLevel: 1,
+  totalPoints: 0,
+  levelProgress: { 1:0, 2:0, 3:0, 4:0, 5:0 }, // correct answers per level
+  streak: 0,
+  lastPlayDate: null,
+  dailyDone: 0,   // 0-5 today's mission answered
+  dailyDate: null
+};
+
+// Quiz session
+let quiz = {
+  levelId: 1,
+  questions: [],
+  current: 0,
+  correct: 0,
+  combo: 0,
+  maxCombo: 0,
+  sessionPoints: 0,
+  isDaily: false,
+  totalQ: 10,
+  answered: false,
+  timer: null,
+  timeLeft: 10
+};
+
+// ============================================================
+//  STORAGE
+// ============================================================
+function loadState() {
+  try {
+    const s = JSON.parse(localStorage.getItem('hqState') || '{}');
+    state = Object.assign(state, s);
+    if (!state.levelProgress) state.levelProgress = { 1:0, 2:0, 3:0, 4:0, 5:0 };
+  } catch(e) {}
+}
+function saveState() {
+  localStorage.setItem('hqState', JSON.stringify(state));
+}
+
+// ============================================================
+//  SCREEN MANAGEMENT
+// ============================================================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'homeScreen') updateHome();
+  if (id === 'levelSelect') renderLevelSelect();
+}
+
+// ============================================================
+//  HOME UPDATE
+// ============================================================
+function getRank(pts) {
+  let r = RANKS[0];
+  for (const rank of RANKS) { if (pts >= rank.minPt) r = rank; }
+  return r;
+}
+
+function updateHome() {
+  const rank = getRank(state.totalPoints);
+  document.getElementById('homeAvatar').textContent = rank.icon;
+  document.getElementById('homeLevelText').textContent = 'Lv.' + state.currentLevel;
+  document.getElementById('homeRankLabel').textContent = rank.label;
+  document.getElementById('homeRankName').textContent = rank.name;
+  document.getElementById('homePoints').textContent = '⭐ ' + state.totalPoints + ' pt';
+
+  // Progress bar
+  const progress = state.levelProgress[state.currentLevel] || 0;
+  const pct = Math.min(100, (progress / 10) * 100);
+  document.getElementById('progressBarFill').style.width = pct + '%';
+  document.getElementById('progressLvBadge').textContent = 'Lv.' + state.currentLevel;
+  document.getElementById('progressText').textContent = progress + '/10';
+  if (state.currentLevel >= 5) {
+    document.getElementById('progressSubText').textContent = '🏆 さいこうレベル！';
+  }
+
+  // Streak / daily
+  checkDailyReset();
+  document.getElementById('streakBadge').textContent = '🔥 ' + state.streak + 'にち';
+  renderDailyDots();
+
+  const done = state.dailyDone >= 5;
+  document.getElementById('missionCompleteBadge').style.display = done ? 'block' : 'none';
+  document.getElementById('dailyStatusText').textContent = done
+    ? 'ミッションかんりょう！ またあした！'
+    : `きょうの 5もん: ${state.dailyDone}/5 もん`;
+}
+
+function checkDailyReset() {
+  const today = todayStr();
+  if (state.dailyDate !== today) {
+    // New day
+    if (state.lastPlayDate === yesterdayStr()) {
+      state.streak++;
+    } else if (state.lastPlayDate !== today) {
+      state.streak = 0;
+    }
+    state.dailyDone = 0;
+    state.dailyDate = today;
+    saveState();
+  }
+}
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+function yesterdayStr() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+
+function renderDailyDots() {
+  const container = document.getElementById('dailyDots');
+  container.innerHTML = '';
+  for (let i = 0; i < 5; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'daily-dot' + (i < state.dailyDone ? ' done' : '');
+    dot.textContent = i < state.dailyDone ? '⭐' : '○';
+    container.appendChild(dot);
+  }
+}
+
+// ============================================================
+//  LEVEL SELECT
+// ============================================================
+function renderLevelSelect() {
+  const list = document.getElementById('levelSelectList');
+  list.innerHTML = '';
+  LEVELS.forEach(lv => {
+    const unlocked = lv.id <= state.currentLevel;
+    const progress = state.levelProgress[lv.id] || 0;
+    const pct = Math.min(100, (progress / 10) * 100);
+    const isCurrent = lv.id === state.currentLevel;
+
+    const item = document.createElement('div');
+    item.className = 'level-item' + (isCurrent ? ' current' : '') + (!unlocked ? ' locked' : '');
+    item.innerHTML = `
+      <div class="level-num">Lv${lv.id}</div>
+      <div class="level-info">
+        <div class="level-info-name">${unlocked ? lv.name : '???'}</div>
+        <div class="level-info-chars">${unlocked ? lv.chars.slice(0,8).join('・') + (lv.chars.length>8?'…':'') : 'クリアしてかいほう！'}</div>
+        ${unlocked ? `<div class="level-info-bar"><div class="level-info-fill" style="width:${pct}%"></div></div>` : ''}
+      </div>
+      ${unlocked
+        ? `<div class="level-score">${progress}/10<br>✅</div>`
+        : `<div class="lock-icon">🔒</div>`}
+    `;
+    if (unlocked) {
+      item.addEventListener('click', () => startQuiz(lv.id, false));
+    }
+    list.appendChild(item);
+  });
+}
+
+// ============================================================
+//  QUIZ ENGINE
+// ============================================================
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function buildQuestions(levelId, count) {
+  const lv = LEVELS[levelId - 1];
+  const pool = shuffle(lv.chars);
+  const selected = pool.slice(0, Math.min(count, pool.length));
+  // If fewer chars than count, repeat
+  const final = [];
+  while (final.length < count) {
+    final.push(...shuffle(lv.chars));
+  }
+  return final.slice(0, count).map(char => {
+    const correct = lv.romajiMap[char] || char;
+    const choices = buildChoices(char, correct, lv);
+    return { char, correct, choices };
+  });
+}
+
+function buildChoices(char, correct, lv) {
+  const wrongs = [];
+  // Get wrong answers from all chars
+  const pool = shuffle(ALL_CHARS).filter(c => c !== char);
+  for (const c of pool) {
+    // find romaji for this char
+    let r = null;
+    for (const level of LEVELS) {
+      if (level.romajiMap[c]) { r = level.romajiMap[c]; break; }
+    }
+    if (r && r !== correct && !wrongs.includes(r)) {
+      wrongs.push(r);
+      if (wrongs.length >= 3) break;
+    }
+  }
+  return shuffle([correct, ...wrongs.slice(0, 3)]);
+}
+
+function startQuiz(levelId, isDaily) {
+  const totalQ = isDaily ? 5 : 10;
+  quiz = {
+    levelId,
+    questions: buildQuestions(levelId, totalQ),
+    current: 0,
+    correct: 0,
+    combo: 0,
+    maxCombo: 0,
+    sessionPoints: 0,
+    isDaily,
+    totalQ,
+    answered: false,
+    timer: null,
+    timeLeft: 10
+  };
+
+  document.getElementById('quizHeaderTitle').textContent = isDaily ? '🌅 デイリー' : `Lv.${levelId} クイズ`;
+  document.getElementById('quizHeaderSub').textContent = LEVELS[levelId - 1].name;
+  showScreen('quizScreen');
+  renderQuestion();
+}
+
+function startDailyQuiz() {
+  checkDailyReset();
+  if (state.dailyDone >= 5) {
+    alert('きょうのミッションはもうおわったよ！\nまたあした！ 🌙');
+    return;
+  }
+  startQuiz(state.currentLevel, true);
+}
+
+function renderQuestion() {
+  if (quiz.current >= quiz.questions.length) {
+    showResult();
+    return;
+  }
+  const q = quiz.questions[quiz.current];
+  quiz.answered = false;
+
+  document.getElementById('quizInfoChip').textContent = `${quiz.current + 1} / ${quiz.totalQ}`;
+  document.getElementById('quizCorrectChip').textContent = `✅ ${quiz.correct}`;
+  document.getElementById('livePoints').textContent = quiz.sessionPoints;
+  document.getElementById('liveCombo').textContent = quiz.combo;
+
+  const charEl = document.getElementById('questionChar');
+  charEl.textContent = q.char;
+  charEl.className = 'question-char' + (q.char.length > 1 ? ' big' : '');
+
+  const grid = document.getElementById('choicesGrid');
+  grid.innerHTML = '';
+  q.choices.forEach(choice => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.textContent = choice;
+    btn.addEventListener('click', () => onAnswer(choice, q.correct));
+    grid.appendChild(btn);
+  });
+
+  startTimer();
+}
+
+function startTimer() {
+  clearInterval(quiz.timer);
+  quiz.timeLeft = 10;
+  updateTimerUI();
+  quiz.timer = setInterval(() => {
+    quiz.timeLeft--;
+    updateTimerUI();
+    if (quiz.timeLeft <= 0) {
+      clearInterval(quiz.timer);
+      if (!quiz.answered) onAnswer(null, quiz.questions[quiz.current].correct);
+    }
+  }, 1000);
+}
+
+function updateTimerUI() {
+  const el = document.getElementById('quizTimer');
+  el.textContent = quiz.timeLeft;
+  el.className = 'quiz-timer' + (quiz.timeLeft <= 3 ? ' urgent' : '');
+}
+
+function onAnswer(chosen, correct) {
+  if (quiz.answered) return;
+  quiz.answered = true;
+  clearInterval(quiz.timer);
+
+  const isCorrect = chosen === correct;
+  const grid = document.getElementById('choicesGrid');
+  const btns = grid.querySelectorAll('.choice-btn');
+  btns.forEach(btn => {
+    btn.classList.add('disabled');
+    if (btn.textContent === correct) btn.classList.add('correct');
+    else if (btn.textContent === chosen) btn.classList.add('wrong');
+  });
+
+  if (isCorrect) {
+    quiz.correct++;
+    quiz.combo++;
+    if (quiz.combo > quiz.maxCombo) quiz.maxCombo = quiz.combo;
+
+    // Points: base 10 + time bonus + combo bonus
+    const timeBonus = quiz.timeLeft >= 8 ? 5 : quiz.timeLeft >= 5 ? 2 : 0;
+    const comboBonus = Math.min(quiz.combo - 1, 5) * 2;
+    const pts = 10 + timeBonus + comboBonus;
+    quiz.sessionPoints += pts;
+
+    showFeedback('⭕', '#10b981');
+    floatStar(pts);
+  } else {
+    quiz.combo = 0;
+    showFeedback('❌', '#ef4444');
+  }
+
+  setTimeout(() => {
+    quiz.current++;
+    renderQuestion();
+  }, 900);
+}
+
+function showFeedback(text, color) {
+  const el = document.getElementById('feedbackText');
+  el.textContent = text;
+  el.style.color = color;
+  el.style.animation = 'none';
+  void el.offsetWidth;
+  el.style.animation = 'feedbackPop 0.7s forwards';
+}
+
+function floatStar(pts) {
+  const star = document.createElement('div');
+  star.className = 'star-float';
+  star.textContent = '+' + pts + '⭐';
+  star.style.left = (30 + Math.random() * 40) + '%';
+  star.style.top = '60%';
+  document.body.appendChild(star);
+  setTimeout(() => star.remove(), 1000);
+}
+
+// ============================================================
+//  RESULT
+// ============================================================
+function showResult() {
+  const { correct, totalQ, sessionPoints, maxCombo, levelId, isDaily } = quiz;
+
+  // Update global state
+  state.totalPoints += sessionPoints;
+  state.lastPlayDate = todayStr();
+
+  if (isDaily) {
+    const added = Math.min(correct, 5 - state.dailyDone);
+    state.dailyDone = Math.min(5, state.dailyDone + added);
+    if (state.dailyDone >= 5) {
+      state.streak = Math.max(state.streak, 1);
+    }
+  }
+
+  // Level progress
+  const prevProgress = state.levelProgress[levelId] || 0;
+  state.levelProgress[levelId] = Math.min(10, prevProgress + correct);
+  const newProgress = state.levelProgress[levelId];
+
+  let leveledUp = false;
+  if (newProgress >= 10 && levelId === state.currentLevel && state.currentLevel < 5) {
+    state.currentLevel++;
+    leveledUp = true;
+  }
+
+  saveState();
+
+  // Result UI
+  const pct = correct / totalQ;
+  let emoji = '😢', title = 'またちょうせん！', sub = 'あきらめないで！';
+  if (pct === 1)      { emoji = '🏆'; title = 'パーフェクト！'; sub = 'ぜんもん せいかい！すごい！'; }
+  else if (pct >= 0.8){ emoji = '🎉'; title = 'すごい！'; sub = 'ほぼぜんもん せいかい！'; }
+  else if (pct >= 0.6){ emoji = '😊'; title = 'よくできた！'; sub = 'もうすこし！'; }
+  else if (pct >= 0.4){ emoji = '😅'; title = 'がんばれ！'; sub = 'れんしゅうしよう！'; }
+
+  document.getElementById('resultEmoji').textContent = emoji;
+  document.getElementById('resultTitle').textContent = title;
+  document.getElementById('resultSub').textContent = sub;
+  document.getElementById('statCorrect').textContent = correct;
+  document.getElementById('statTotal').textContent = totalQ;
+  document.getElementById('statMaxCombo').textContent = maxCombo;
+  document.getElementById('xpGained').textContent = '+' + sessionPoints + ' ⭐';
+
+  const nextBtn = document.getElementById('resultNextBtn');
+  nextBtn.textContent = leveledUp ? '🆙 つぎのレベルへ！' : 'もう一かい';
+
+  showScreen('resultScreen');
+
+  if (leveledUp) {
+    setTimeout(() => showLevelUp(state.currentLevel), 600);
+  } else if (pct >= 0.8) {
+    launchConfetti();
+  }
+}
+
+function retryOrNext() {
+  startQuiz(state.currentLevel, false);
+}
+
+// ============================================================
+//  LEVEL UP
+// ============================================================
+function showLevelUp(newLevel) {
+  document.getElementById('levelUpNum').textContent = newLevel;
+  document.getElementById('levelUpText').textContent = `レベル${newLevel} になった！`;
+  document.getElementById('levelUpOverlay').classList.add('show');
+  launchConfetti(200);
+}
+
+function closeLevelUp() {
+  document.getElementById('levelUpOverlay').classList.remove('show');
+}
+
+// ============================================================
+//  CONFETTI
+// ============================================================
+function launchConfetti(count = 100) {
+  const canvas = document.getElementById('confettiCanvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const particles = [];
+  const colors = ['#ff6b9d','#a855f7','#f59e0b','#10b981','#3b82f6','#ef4444','#fbbf24'];
+
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: -10,
+      vx: (Math.random() - 0.5) * 6,
+      vy: Math.random() * 4 + 2,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      size: Math.random() * 10 + 4,
+      rotation: Math.random() * 360,
+      rotSpeed: (Math.random() - 0.5) * 10
+    });
+  }
+
+  let frame;
+  let startTime = Date.now();
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let alive = false;
+    for (const p of particles) {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.1;
+      p.rotation += p.rotSpeed;
+      if (p.y < canvas.height + 20) alive = true;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate((p.rotation * Math.PI) / 180);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+      ctx.restore();
+    }
+    if (alive && Date.now() - startTime < 4000) {
+      frame = requestAnimationFrame(draw);
+    } else {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  }
+  cancelAnimationFrame(frame);
+  draw();
+}
+
+// ============================================================
+//  MISC
+// ============================================================
+function confirmQuit() {
+  clearInterval(quiz.timer);
+  if (confirm('クイズをやめる？')) {
+    showScreen('homeScreen');
+  } else {
+    startTimer();
+  }
+}
+
+// ============================================================
+//  INIT
+// ============================================================
+loadState();
+updateHome();
+</script>
+</body>
+</html>
