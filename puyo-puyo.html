@@ -109,11 +109,11 @@
     display: grid;
     grid-template-columns: repeat(6, 1fr);
     grid-template-rows: repeat(12, 1fr);
-    border: 3px solid rgba(255,180,220,0.7);
+    border: 3px solid #ffcc00;
     border-radius: 8px;
     overflow: hidden;
-    background: rgba(255,240,255,0.55);
-    box-shadow: 0 0 20px rgba(255,150,200,0.3), inset 0 0 16px rgba(220,180,255,0.2);
+    background: #fffbe6;
+    box-shadow: 0 0 20px rgba(255,200,50,0.3), inset 0 0 16px rgba(255,220,100,0.2);
     width: 100%;
     aspect-ratio: 6/12;
   }
@@ -147,51 +147,14 @@
 
   /* ぷよ本体 */
   .puyo-ball {
-    width: 88%;
-    height: 88%;
+    width: 96%;
+    height: 96%;
     border-radius: 50%;
     position: relative;
     border: 2px solid rgba(255,255,255,0.7);
     box-shadow: inset -2px -2px 5px rgba(0,0,0,0.15), inset 2px 2px 6px rgba(255,255,255,0.5);
-    overflow: visible;
+    overflow: hidden;
   }
-
-  /* 白目（大きめ・左右2つをbeforeで表現） */
-  .puyo-ball::before {
-    content: '';
-    position: absolute;
-    width: 30%;
-    height: 32%;
-    background: white;
-    border-radius: 50%;
-    top: 20%;
-    left: 14%;
-    box-shadow:
-      inset 3px 3px 0 2px #222,   /* 左目の黒目 */
-      32% 0 0 0 white,             /* 右の白目 */
-      calc(32% + 3px) 3px 0 2px #222; /* 右目の黒目 */
-  }
-
-  /* 笑顔の口（Uの字） */
-  .puyo-ball::after {
-    content: '';
-    position: absolute;
-    width: 38%;
-    height: 16%;
-    border-bottom: 3px solid rgba(0,0,0,0.45);
-    border-left: 2px solid transparent;
-    border-right: 2px solid transparent;
-    border-radius: 0 0 50% 50%;
-    bottom: 20%;
-    left: 31%;
-  }
-
-  /* 各色（明るくやわらかいパステル） */
-  .puyo-0 { background: radial-gradient(circle at 40% 35%, #ffaaaa, #ff5566); }
-  .puyo-1 { background: radial-gradient(circle at 40% 35%, #ffeeaa, #ffcc33); }
-  .puyo-2 { background: radial-gradient(circle at 40% 35%, #aaffcc, #44cc77); }
-  .puyo-3 { background: radial-gradient(circle at 40% 35%, #aaddff, #44aaff); }
-  .puyo-4 { background: radial-gradient(circle at 40% 35%, #ddaaff, #aa55ff); }
 
   /* ネクストぷよのぷよ */
   .next-cell .puyo-ball {
@@ -485,8 +448,24 @@ const PUYO_EMOJI = ['❤️','💛','💚','💙','💜']; // 後方互換用（
 const PUYO_COLORS = [0, 1, 2, 3, 4]; // 0=赤,1=黄,2=緑,3=青,4=紫
 
 function makePuyoBall(colorIdx) {
+  const colors = ['#ff8899','#ffdd44','#66ee99','#66bbff','#cc88ff'];
+  const darkColors = ['#cc2244','#cc9900','#009944','#0055cc','#7700cc'];
   const div = document.createElement('div');
-  div.className = `puyo-ball puyo-${colorIdx}`;
+  div.className = 'puyo-ball puyo-' + colorIdx;
+  div.style.background = `radial-gradient(circle at 40% 35%, ${colors[colorIdx]}, ${darkColors[colorIdx]})`;
+  // SVGで目と口を描く
+  div.innerHTML = `<svg viewBox="0 0 100 100" style="width:100%;height:100%;position:absolute;top:0;left:0;">
+    <!-- 左目 白目 -->
+    <circle cx="33" cy="38" r="14" fill="white"/>
+    <!-- 左目 黒目 -->
+    <circle cx="36" cy="41" r="7" fill="#222"/>
+    <!-- 右目 白目 -->
+    <circle cx="67" cy="38" r="14" fill="white"/>
+    <!-- 右目 黒目 -->
+    <circle cx="70" cy="41" r="7" fill="#222"/>
+    <!-- 口（にっこり） -->
+    <path d="M 35 65 Q 50 80 65 65" stroke="#333" stroke-width="4" fill="none" stroke-linecap="round"/>
+  </svg>`;
   return div;
 }
 
